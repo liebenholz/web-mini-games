@@ -44,8 +44,9 @@
 ## 🙋 사람이 할 일
 
 - 도메인 구입, Cloudflare DNS(`play.`, `api.`), Cloudflare Pages 프로젝트와 API 토큰
-- Oracle VM에 Docker 설치, 배포용 SSH 키, OCI 보안 목록에서 80/443만 개방
-- GitHub Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `DEPLOY_SSH_HOST`, `DEPLOY_SSH_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_SSH_KNOWN_HOSTS`(`ssh-keyscan` 결과)
+- Oracle VM에 Docker 설치, 배포용 SSH 키. OCI 보안 목록은 80/443만 개방 (SSH는 Tailscale 경유, ADR 0001)
+- Tailscale: 접근 규칙(tag:ci → tag:server:22), VM 등록(`wmg-server`, 키 만료 끄기), CI용 OAuth 클라이언트
+- GitHub Secrets: `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `DEPLOY_SSH_HOST`(tailnet 이름), `DEPLOY_SSH_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_SSH_KNOWN_HOSTS`
 - GitHub Variables: `CF_PAGES_PROJECT`, `VITE_SERVER_URL`(예: `wss://api.<도메인>`), Environment `production`
 - VM의 `~/wmg/infra/.env`: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `API_DOMAIN`, `CORS_ORIGINS`. GHCR 패키지가 비공개면 VM에서 `docker login ghcr.io` (읽기 전용 토큰)
 - 저장소 설정: `main` 브랜치 보호, secret scanning push protection, Dependabot
