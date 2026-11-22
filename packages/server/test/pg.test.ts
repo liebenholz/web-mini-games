@@ -80,7 +80,7 @@ describe('M3: DB 장애', () => {
   it('DB에 연결할 수 없으면 save는 throw하지 않고 재시도를 예약한다', async () => {
     const logs: string[] = [];
     const recorder = new PgRecorder({
-      connectionString: 'postgres://nobody:x@127.0.0.1:1/none',
+      connectionString: 'postgres://nobody@127.0.0.1:1/none',
       log: (_l, m) => logs.push(m),
       retryDelaysMs: [60_000],
     });
