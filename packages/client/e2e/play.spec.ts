@@ -39,25 +39,35 @@ test('M4: 사람 1명 + 봇 2명으로 한 판 완주 (360px)', async ({ page })
 
   // 게임 화면: 내 차례가 오면 직접 선언한다
   await expect(page.locator('canvas')).toBeVisible();
+
+  // E2E는 시간 배율 때문에 공개가 150ms 정도로 짧다. 기다리기 시작하기 전에 지나가 버릴 수 있으므로
+  // 게임 내내 판정 요약과 직전 판정 버튼이 나타났는지 기록해 두고 끝에서 확인한다
+  type Seen = { summary: string; recall: boolean };
+  await page.evaluate(() => {
+    const w = window as unknown as { __seen: Seen };
+    w.__seen = { summary: '', recall: false };
+    new MutationObserver(() => {
+      const s = document.querySelector('[data-testid=reveal-summary]');
+      if (s && !w.__seen.summary) w.__seen.summary = s.textContent ?? '';
+      if (document.querySelector('[data-testid=recall-open]')) w.__seen.recall = true;
+    }).observe(document.body, { subtree: true, childList: true });
+  });
+
   const bid = page.getByTestId('bid');
   await expect(bid).toBeEnabled({ timeout: 30_000 });
   await expectAllButtonsOnScreen(page);
   await bid.click();
   await expect(page.locator('.statusbar .total')).toContainText('9');
 
-  // 공개 중에는 선언 패널 자리에 판정 요약이 나오고 (E2E는 시간 배율 때문에 공개가 짧아 붙는 순간을 기다린다),
-  // 다음 라운드에는 직전 판정 버튼이 생긴다
-  const summary = await page.waitForSelector('[data-testid=reveal-summary]', {
-    state: 'attached',
-    timeout: 60_000,
-  });
-  expect(await summary.innerText()).toMatch(/라이어![\s\S]*와일드/);
-  await page.waitForSelector('[data-testid=recall-open]', { state: 'attached', timeout: 60_000 });
-
   // 이후에는 무입력: 2턴 타임아웃 뒤 자동 진행 (S-07) → 게임 종료
   const result = page.getByTestId('result');
   await expect(result).toBeVisible({ timeout: 150_000 });
   await expect(result.locator('.ranking li')).toHaveCount(3);
+
+  // 공개 중에는 선언 패널 자리에 판정 요약이, 다음 라운드에는 직전 판정 버튼이 나왔어야 한다
+  const seen = await page.evaluate(() => (window as unknown as { __seen: Seen }).__seen);
+  expect(seen.summary).toMatch(/라이어![\s\S]*와일드/);
+  expect(seen.recall).toBe(true);
   await expectAllButtonsOnScreen(page);
 
   // 리매치하면 같은 방 대기실로 돌아간다

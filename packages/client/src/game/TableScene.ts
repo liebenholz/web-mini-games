@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import type { DieFace } from '@wmg/rules';
 import type { BidView, PlayerView, RevealView } from '../net.js';
+import { seatPoints } from './seatLayout.js';
 
 /** Phaser 테이블에 넘기는 공개 정보 + 내 주사위. 다른 사람의 눈은 reveal이 온 뒤에만 들어온다 (S-01). */
 export interface TableModel {
@@ -177,19 +178,15 @@ export class TableScene extends Phaser.Scene {
     const compact = W < 520;
     const cx = W / 2;
     const cy = H * (compact ? 0.43 : 0.45);
-    const rx = W * (compact ? 0.38 : 0.36);
     const ry = H * (compact ? 0.28 : 0.31);
     const n = others.length;
-    const slotWidth = n <= 1 ? W * 0.6 : Math.min(160, (W - 24) / Math.min(n, compact ? 3 : 5));
+    const slotWidth = n <= 1 ? W * 0.6 : Math.min(160, (W - 24) / Math.min(n, 3));
+    // 좌석은 세로줄 3개, 가로줄 3개에 고정한다 (seatLayout.ts)
+    const points = seatPoints(n, { width: W, height: H, cy, ry, compact });
     others.forEach((player, i) => {
-      // 위쪽 반원에 고르게 (왼쪽 아래 → 위 → 오른쪽 아래)
-      const t = n === 1 ? 0.5 : i / (n - 1);
-      const angle = Math.PI * (1.05 - 1.1 * t);
-      // 공개 때 주사위 줄(최대 5개)이 화면 밖으로 나가지 않게 가장자리를 막는다
-      const margin = compact ? 54 : 70;
-      const x = Math.min(W - margin, Math.max(margin, cx + Math.cos(angle) * rx));
-      const y = cy - Math.sin(angle) * ry;
-      this.#drawSeat(player, x, y, toneIndex.get(player.id) ?? 0, slotWidth, m, compact);
+      const point = points[i];
+      if (!point) return;
+      this.#drawSeat(player, point.x, point.y, toneIndex.get(player.id) ?? 0, slotWidth, m, compact);
     });
 
     const revealKey = m.reveal ? `${m.roundNo}:${m.reveal.loserId}` : '';
