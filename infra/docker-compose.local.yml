@@ -1,0 +1,15 @@
+# 로컬 전체 스택 확인용. 서버 이미지를 저장소에서 직접 빌드한다.
+#   cp ../.env.example .env   # POSTGRES_* 값을 채운다
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# 그다음 클라이언트를 VITE_SERVER_URL=wss://localhost 로 띄운다.
+services:
+  server:
+    image: wmg-server:local
+    build:
+      context: ..
+      dockerfile: packages/server/Dockerfile
+    environment:
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+  caddy:
+    environment:
+      API_DOMAIN: localhost

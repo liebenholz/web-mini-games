@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: wmg
+          POSTGRES_PASSWORD: wmg-ci-only
+          POSTGRES_DB: wmg_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U wmg -d wmg_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      # CI 전용 일회성 DB. 실제 비밀값이 아니다
+      TEST_DATABASE_URL: postgres://wmg:wmg-ci-only@localhost:5432/wmg_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm -r test
+      - run: pnpm -r build
+
+  e2e:
+    runs-on: ubuntu-24.04
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter client exec playwright install --with-deps chromium
+      - run: pnpm --filter client e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: packages/client/playwright-report
+          retention-days: 7

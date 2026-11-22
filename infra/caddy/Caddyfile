@@ -1,0 +1,13 @@
+# api.<도메인> → 게임 서버. Caddy가 TLS 인증서를 자동 발급하고 WebSocket 업그레이드를 그대로 넘긴다.
+{$API_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy server:2567 {
+		# 배포로 서버가 잠깐 내려가도 바로 502를 내지 않고 기다린다
+		lb_try_duration 10s
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		-Server
+	}
+}
