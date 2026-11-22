@@ -1,8 +1,11 @@
 name: deploy-server
 
 # v* 태그를 올리면 arm64 이미지를 빌드해 GHCR에 올리고, 운영 VM에서 compose로 교체한다.
-# 필요한 값 (🙋 사람이 등록):
-#   secrets.DEPLOY_SSH_HOST, secrets.DEPLOY_SSH_USER, secrets.DEPLOY_SSH_KEY, secrets.DEPLOY_SSH_KNOWN_HOSTS
+# VM의 SSH(22)는 인터넷에 열지 않는다. 러너가 Tailscale(tag:ci)로 tailnet에 잠시 들어와 VM(tag:server)에 접속한다.
+# 필요한 값 (🙋 사람이 등록, 절차는 docs/ops/deploy-oracle.md):
+#   secrets.TS_OAUTH_CLIENT_ID, secrets.TS_OAUTH_SECRET   (Tailscale OAuth 클라이언트, auth_keys 범위, tag:ci)
+#   secrets.DEPLOY_SSH_HOST   (VM의 tailnet 이름, 예: wmg-server)
+#   secrets.DEPLOY_SSH_USER, secrets.DEPLOY_SSH_KEY, secrets.DEPLOY_SSH_KNOWN_HOSTS
 #   VM의 ~/wmg/infra/.env (POSTGRES_*, API_DOMAIN, CORS_ORIGINS) — 저장소에는 넣지 않는다
 
 on:
@@ -48,6 +51,14 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
+      # 일회용 노드로 tailnet에 들어온다. 작업이 끝나면 액션이 로그아웃하고 노드가 사라진다
+      - name: Join tailnet
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ secrets.DEPLOY_SSH_HOST }}
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
