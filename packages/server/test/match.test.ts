@@ -314,12 +314,9 @@ describe('정보 은닉 (S-01, S-02)', () => {
   it('탈락자는 다음 라운드부터 your_dice를 받지 않는다 (S-02)', () => {
     const { match, io, scheduler, ids } = startHumans(3, { startingDice: 3 });
     let eliminated: string | null = null;
-    let roundsAfter = 0;
     for (let i = 0; i < 20_000 && match.phase !== 'GAME_OVER'; i += 1) {
-      const before = match.state.roundNo;
       scheduler.step();
-      if (!eliminated) eliminated = ids.find((id) => match.state.players.get(id)?.eliminated) ?? null;
-      else if (match.state.roundNo > before) roundsAfter += 1;
+      eliminated ??= ids.find((id) => match.state.players.get(id)?.eliminated) ?? null;
     }
     expect(eliminated).not.toBeNull();
     const elimRank = match.state.players.get(eliminated!)!.rank;
@@ -334,7 +331,13 @@ describe('정보 은닉 (S-01, S-02)', () => {
       (m) => m.type === 'player_eliminated' && m.payload.playerId === eliminated,
     )!.payload.roundNo as number;
     expect(lastDiceRound).toBeLessThanOrEqual(elimRound);
-    expect(roundsAfter).toBeGreaterThan(0);
+    // 탈락 뒤에도 라운드가 진행됐고(다른 사람은 주사위를 받았고), 탈락자는 그 라운드의 주사위를 받지 않았다
+    const lastRound = match.state.roundNo;
+    expect(lastRound).toBeGreaterThan(elimRound);
+    const survivor = ids.find((id) => id !== eliminated && match.state.players.get(id)?.rank === 1)!;
+    expect(io.received(survivor).some((m) => m.type === 'your_dice' && m.payload.roundNo === lastRound)).toBe(
+      true,
+    );
   });
 });
 

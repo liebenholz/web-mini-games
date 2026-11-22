@@ -21,8 +21,10 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-24.04
-    # 포크 PR에는 비밀값이 없으므로 건너뛴다
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    # Cloudflare 설정(vars.CF_PAGES_PROJECT)을 등록하기 전과 포크 PR(비밀값 없음)에서는 건너뛴다
+    if: >-
+      vars.CF_PAGES_PROJECT != '' &&
+      (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -34,12 +36,15 @@ jobs:
       - run: pnpm --filter client... build
         env:
           VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+      # wrangler-action은 워크스페이스에 pnpm으로 wrangler를 설치하다가 pnpm의 설치 스크립트 차단에 걸린다.
+      # 워크스페이스와 분리된 npx로 버전을 고정해 실행한다.
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: >-
-            pages deploy packages/client/dist
-            --project-name=${{ vars.CF_PAGES_PROJECT }}
-            --branch=${{ github.event_name == 'push' && 'main' || github.head_ref }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+          BRANCH: ${{ github.event_name == 'push' && 'main' || github.head_ref }}
+        run: >-
+          npx --yes wrangler@4.166.0 pages deploy packages/client/dist
+          --project-name="$PROJECT"
+          --branch="$BRANCH"

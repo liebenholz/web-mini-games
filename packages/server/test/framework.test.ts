@@ -34,6 +34,14 @@ describe('S-04: 테스트 시드 주입', () => {
     );
     expect(() => assertTestSeedAllowed({ NODE_ENV: 'test', ALLOW_TEST_SEED: 'true' })).not.toThrow();
   });
+  it('시드 난수의 id도 UUID 형식이다 (games.id가 uuid 컬럼)', () => {
+    const rng = createSeededRng(11);
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+    const ids = Array.from({ length: 50 }, () => rng.id());
+    for (const id of ids) expect(id).toMatch(uuid);
+    expect(new Set(ids).size).toBe(50);
+    expect(createSeededRng(11).id()).toBe(ids[0]);
+  });
   it('같은 시드는 같은 수열 (리플레이 가능)', () => {
     const a = createSeededRng(42);
     const b = createSeededRng(42);

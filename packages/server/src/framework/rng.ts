@@ -22,7 +22,6 @@ export const cryptoRng: Rng = {
 export function createSeededRng(seed: number): Rng {
   assertTestSeedAllowed();
   let a = seed >>> 0;
-  let counter = 0;
   const next = (): number => {
     a = (a + 0x6d2b79f5) >>> 0;
     let t = a;
@@ -32,7 +31,14 @@ export function createSeededRng(seed: number): Rng {
   };
   return {
     int: (maxExclusive) => Math.floor(next() * maxExclusive),
-    id: () => `seeded-${seed}-${(counter += 1)}`,
+    // 운영의 randomUUID와 같은 v4 형식으로 만든다 (DB의 uuid 컬럼에 그대로 들어가야 한다)
+    id: () => {
+      const hex = Array.from({ length: 32 }, () => Math.floor(next() * 16).toString(16));
+      hex[12] = '4';
+      hex[16] = (8 + Math.floor(next() * 4)).toString(16);
+      const s = hex.join('');
+      return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`;
+    },
   };
 }
 
