@@ -278,5 +278,7 @@ caffeinate -i ./infra/scripts/oci-retry-apply.sh ocid1.ormstack.oc1....
 
 - `caffeinate -i`는 기다리는 동안 맥이 잠들지 않게 한다. 노트북 덮개를 닫으면 멈추니 전원을 연결해 두고 열어 둔다
 - 간격을 바꾸려면 `INTERVAL_SECONDS=900`처럼 앞에 붙인다. 5분 미만은 API 요청 제한 때문에 거부한다
+- `TooManyRequests` 같은 일시적인 API 오류가 나면 멈추지 않고 간격을 두 배씩(최대 6배) 늘려 다시 시도한다. 정상 응답을 받으면 원래 간격으로 돌아온다
+- 같은 스택에 스크립트를 두 번 띄우면 두 번째는 바로 멈춘다 (요청이 두 배가 되어 요청 제한에 걸리므로)
 - 성공하면 "2. VM 만들기"로 돌아가 예약 공인 IP를 붙인다
 - 며칠 동안 성공하지 못하면 1 OCPU / 6 GB로 줄이거나 Pay As You Go 전환을 검토한다 ("1. Oracle Cloud 가입" 4번)
