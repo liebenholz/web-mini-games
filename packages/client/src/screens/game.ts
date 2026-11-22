@@ -4,8 +4,67 @@ import { h, svg, toast } from '../dom.js';
 import { dieSvg, icons } from '../icons.js';
 import { describeError, type Session, type SessionSnapshot } from '../net.js';
 import type { TableModel, TableScene } from '../game/TableScene.js';
+import { describeReveal, summarizeReveal, type RevealSummary } from '../revealSummary.js';
 
 const URGENT_MS = 5000;
+
+/** 판정 요약 (B안). live면 남은 시간을 붙인다. headline이면 "누구의 선언 · 누가 라이어"를 맨 위에 둔다 */
+function summaryView(
+  summary: RevealSummary,
+  s: SessionSnapshot,
+  opts: { live: boolean; headline: boolean },
+): { root: HTMLElement; countdown: HTMLElement | null } {
+  const t = describeReveal(summary, s.view.players, s.me);
+  const countdown = opts.live ? h('span', { class: 'hint' }) : null;
+  const chipDie = (face: number) =>
+    h('span', { class: 'chip-die', 'aria-hidden': 'true' }, svg(dieSvg(face, `${face}`)));
+  const root = h(
+    'div',
+    { class: 'summary', role: 'status', 'data-testid': 'reveal-summary' },
+    h(
+      'div',
+      { class: 'summary-top' },
+      h('span', { class: `pill ${summary.succeeded ? 'pill-ok' : 'pill-bad'}` }, t.verdict),
+      countdown,
+    ),
+    opts.headline
+      ? h(
+          'p',
+          { class: 'summary-headline' },
+          h('span', {}, t.bidderPart),
+          h('span', { class: 'sep', 'aria-hidden': 'true' }, ' · '),
+          h('span', { class: 'liar' }, t.callerPart),
+          h('span', { class: 'hint' }, ` (${t.bidPart})`),
+        )
+      : null,
+    h(
+      'div',
+      {
+        class: 'calc',
+        'aria-label': `${summary.face} ${summary.faceCount}개, 와일드 1 ${summary.wildCount}개, 합계 ${summary.actual}개`,
+      },
+      h('span', { class: 'chip' }, chipDie(summary.face), `${summary.faceCount}개`),
+      h('span', { class: 'op', 'aria-hidden': 'true' }, '+'),
+      h(
+        'span',
+        { class: 'chip' },
+        chipDie(1),
+        `${summary.wildCount}개`,
+        h('span', { class: 'hint' }, '와일드'),
+      ),
+      h('span', { class: 'op', 'aria-hidden': 'true' }, '='),
+      h('span', { class: 'chip chip-total' }, `${summary.actual}개`),
+    ),
+    h('p', { class: 'reason' }, t.reason),
+    h(
+      'div',
+      { class: 'loss' },
+      h('span', { class: 'minus' }, summary.loserEliminated ? '탈락' : '-1'),
+      h('span', {}, `${t.loss} · ${t.next}`),
+    ),
+  );
+  return { root, countdown };
+}
 
 /** 게임 화면: 상태 줄 + Phaser 테이블 + 선언 패널 (명세 8장). 반환값은 정리 함수 */
 export function mountGame(root: HTMLElement, session: Session, onExit: () => void): () => void {
@@ -32,6 +91,63 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
   let overlay: HTMLElement | null = null;
   let raf = 0;
   let disposed = false;
+  // 라운드별 판정 요약. 공개 시점(패배 반영 전) 상태로 한 번만 계산해 둔다
+  const summaries = new Map<number, RevealSummary>();
+  let liveCountdown: HTMLElement | null = null;
+  let recall: {
+    backdrop: HTMLElement;
+    trigger: HTMLElement | null;
+    turnId: string;
+    onKey: (e: KeyboardEvent) => void;
+  } | null = null;
+
+  function summaryFor(s: SessionSnapshot): RevealSummary | null {
+    if (!s.reveal) return null;
+    let summary = summaries.get(s.reveal.roundNo);
+    if (!summary) {
+      summary = summarizeReveal(s.reveal, s.view.players, s.view.bids);
+      summaries.set(s.reveal.roundNo, summary);
+      for (const round of summaries.keys()) if (round < s.reveal.roundNo - 1) summaries.delete(round);
+    }
+    return summary;
+  }
+
+  function closeRecall(): void {
+    if (!recall) return;
+    document.removeEventListener('keydown', recall.onKey);
+    recall.backdrop.remove();
+    if (recall.trigger?.isConnected) recall.trigger.focus();
+    recall = null;
+  }
+
+  /** 3번 안: 지나간 판정을 아래에서 올라오는 시트로 다시 보여 준다 */
+  function openRecall(summary: RevealSummary, trigger: HTMLElement): void {
+    closeRecall();
+    const s = session.snapshot;
+    const close = h(
+      'button',
+      { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': '닫기' },
+      svg(icons.close),
+    );
+    const sheet = h(
+      'div',
+      { class: 'recall-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'recall-title' },
+      h('div', { class: 'recall-head' }, h('h2', { id: 'recall-title' }, '직전 판정'), close),
+      summaryView(summary, s, { live: false, headline: true }).root,
+    );
+    const backdrop = h('div', { class: 'recall-backdrop', 'data-testid': 'recall' }, sheet);
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeRecall();
+    });
+    close.addEventListener('click', closeRecall);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeRecall();
+    };
+    document.addEventListener('keydown', onKey);
+    document.body.append(backdrop);
+    recall = { backdrop, trigger, turnId: s.view.turnId, onKey };
+    close.focus();
+  }
 
   const timerBar = h('i');
   const timer = h('div', { class: 'timer', 'aria-hidden': 'true' }, timerBar);
@@ -60,7 +176,9 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
   }
 
   function tableModel(s: SessionSnapshot): TableModel {
+    const summary = summaryFor(s);
     return {
+      revealText: summary ? { bidPart: describeReveal(summary, s.view.players, s.me).bidPart } : null,
       phase: s.view.phase,
       me: s.me,
       players: s.view.players,
@@ -91,11 +209,45 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
     } else {
       timerBar.style.transform = 'scaleX(0)';
     }
+    // 공개 중: "N초 뒤 다음 라운드" (서버 마감 시각 기준, S-05)
+    if (liveCountdown && (s.view.phase === 'REVEAL' || s.view.phase === 'RESOLVE')) {
+      const left = Math.max(0, s.view.phaseEndsAt - session.serverNow());
+      const summary = s.reveal ? summaries.get(s.reveal.roundNo) : undefined;
+      const what = summary && summary.nextStarterId === null ? '결과' : '다음 라운드';
+      liveCountdown.textContent = `${Math.max(1, Math.ceil(left / 1000))}초 뒤 ${what}`;
+    }
     raf = requestAnimationFrame(tick);
   }
   raf = requestAnimationFrame(tick);
 
   function renderPanel(s: SessionSnapshot): void {
+    // 공개 중에는 선언 패널 자리에 판정 요약을 보여 준다 (B안). 높이를 유지해 테이블이 흔들리지 않게 한다
+    const live = s.view.phase === 'REVEAL' || s.view.phase === 'RESOLVE' ? summaryFor(s) : null;
+    if (live) {
+      const before = panel.offsetHeight;
+      const view = summaryView(live, s, { live: true, headline: true });
+      liveCountdown = view.countdown;
+      panel.replaceChildren(view.root);
+      if (before > 0) panel.style.minHeight = `${before}px`;
+      return;
+    }
+    liveCountdown = null;
+    panel.style.minHeight = '';
+
+    // 3번 안: 다음 라운드 동안 직전 판정을 다시 볼 수 있다
+    const previous = s.view.phase === 'BIDDING' ? summaries.get(s.view.roundNo - 1) : undefined;
+    let recallBtn: HTMLElement | null = null;
+    if (previous) {
+      const btn = h(
+        'button',
+        { class: 'btn btn-ghost recall-btn', type: 'button', 'data-testid': 'recall-open' },
+        svg(icons.history),
+        '직전 판정',
+      );
+      btn.addEventListener('click', () => openRecall(previous, btn));
+      recallBtn = btn;
+    }
+
     const me = s.view.players.find((p) => p.id === s.me);
     const turnPlayer = s.view.players.find((p) => p.id === s.view.currentTurn);
     const myTurn = s.view.phase === 'BIDDING' && s.view.currentTurn === s.me && sentTurn !== s.view.turnId;
@@ -129,7 +281,12 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
           'div',
           { class: 'turn-line' },
           statusEl,
-          h('span', { class: 'hint' }, me?.eliminated ? '탈락 · 관전 중' : '관전 중'),
+          h(
+            'span',
+            { class: 'turn-extra' },
+            h('span', { class: 'hint' }, me?.eliminated ? '탈락 · 관전 중' : '관전 중'),
+            recallBtn,
+          ),
         ),
         timer,
       );
@@ -211,7 +368,12 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
         'div',
         { class: 'turn-line' },
         statusEl,
-        extra ?? (state.liarOnly && myTurn ? h('span', { class: 'hint' }, '더 올릴 수 없습니다') : null),
+        h(
+          'span',
+          { class: 'turn-extra' },
+          extra ?? (state.liarOnly && myTurn ? h('span', { class: 'hint' }, '더 올릴 수 없습니다') : null),
+          recallBtn,
+        ),
       ),
       timer,
       h('div', { class: 'bid-row' }, h('div', { class: 'stepper' }, minus, qty, plus), faces),
@@ -273,6 +435,13 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
   function render(s: SessionSnapshot): void {
     total.replaceChildren('판 위 주사위 ', h('b', {}, String(s.view.totalDice || '–')), '개');
     conn.replaceChildren(s.connection === 'online' ? '' : svg(icons.offline));
+    // 직전 판정 시트는 공개가 다시 시작되거나 새로 내 차례가 오면 닫는다 (선언 패널을 가리지 않게)
+    if (
+      recall &&
+      (s.view.phase !== 'BIDDING' || (s.view.currentTurn === s.me && s.view.turnId !== recall.turnId))
+    ) {
+      closeRecall();
+    }
     scene?.setModel(tableModel(s));
     tableHost.setAttribute('aria-label', describeTable(s));
     renderPanel(s);
@@ -295,6 +464,7 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
     off();
     offError();
     cancelAnimationFrame(raf);
+    closeRecall();
     overlay?.remove();
     destroyTable?.();
   };

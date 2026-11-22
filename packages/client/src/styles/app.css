@@ -1010,3 +1010,177 @@ p {
 .input-code::placeholder {
   font-weight: 500;
 }
+
+/* ───── 판정 요약 (공개 중 선언 패널 자리, 직전 판정 시트) ───── */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 28px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: 0.9375rem;
+}
+
+.pill-ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.pill-bad {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.summary-headline {
+  font-weight: 700;
+}
+
+.summary-headline .sep {
+  color: var(--ink-3);
+}
+
+.summary-headline .liar {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+.calc {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.calc .op {
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip .hint {
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.chip-total {
+  padding-left: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.chip-die {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.chip-die svg {
+  width: 20px;
+  height: 20px;
+}
+
+.reason {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+.loss {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.loss .minus {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: var(--danger-ink);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.turn-extra {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.recall-btn {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 0.875rem;
+  color: var(--accent);
+}
+
+.recall-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.recall-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(29 27 44 / 0.28);
+  animation: fade 160ms var(--ease-out);
+}
+
+.recall-sheet {
+  width: min(520px, 100%);
+  max-height: 80dvh;
+  overflow-y: auto;
+  background: var(--bg);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-3) var(--space-4) max(var(--space-5), env(safe-area-inset-bottom));
+  box-shadow: 0 -12px 40px -16px rgb(29 27 44 / 0.4);
+  animation: rise 220ms var(--ease-out);
+}
+
+.recall-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}

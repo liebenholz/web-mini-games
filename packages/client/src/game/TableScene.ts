@@ -13,6 +13,8 @@ export interface TableModel {
   readonly turnMs: number;
   readonly bids: readonly BidView[];
   readonly reveal: RevealView | null;
+  /** 공개 장면의 선언 문구 ("4가 9개 이상"). 조사는 DOM 쪽에서 만든다. 없으면 숫자로 보여 준다 */
+  readonly revealText: { readonly bidPart: string } | null;
   readonly roundNo: number;
   readonly serverNow: () => number;
 }
@@ -150,9 +152,9 @@ export class TableScene extends Phaser.Scene {
     const left = Math.max(0, m.deadline - m.serverNow());
     const ratio = m.turnMs > 0 ? left / m.turnMs : 0;
     const { x, y, r } = spot.ring;
-    g.lineStyle(4, this.#palette.line, 1);
+    g.lineStyle(3, this.#palette.line, 1);
     g.strokeCircle(x, y, r);
-    g.lineStyle(4, left <= 5000 ? this.#palette.danger : this.#palette.accent, 1);
+    g.lineStyle(3, left <= 5000 ? this.#palette.danger : this.#palette.accent, 1);
     g.beginPath();
     g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio, false);
     g.strokePath();
@@ -174,9 +176,9 @@ export class TableScene extends Phaser.Scene {
 
     const compact = W < 520;
     const cx = W / 2;
-    const cy = H * (compact ? 0.42 : 0.44);
+    const cy = H * (compact ? 0.43 : 0.45);
     const rx = W * (compact ? 0.38 : 0.36);
-    const ry = H * (compact ? 0.3 : 0.32);
+    const ry = H * (compact ? 0.28 : 0.31);
     const n = others.length;
     const slotWidth = n <= 1 ? W * 0.6 : Math.min(160, (W - 24) / Math.min(n, compact ? 3 : 5));
     others.forEach((player, i) => {
@@ -282,9 +284,10 @@ export class TableScene extends Phaser.Scene {
     const tone = p.tones[index % 6] ?? { bg: p.surface, fg: p.ink, fgCss: p.css.ink };
     const active = m.currentTurn === player.id && m.phase === 'BIDDING';
     const r = compact ? 17 : 20;
-    const avatarY = y - (compact ? 22 : 26);
+    // 타이머 링(아바타 + 4px)이 아래 이름을 덮지 않게 아바타를 이름에서 띄운다
+    const avatarY = y - (compact ? 28 : 32);
     this.#avatar(x, avatarY, r, player, tone, player.eliminated);
-    this.#spots.set(player.id, { player, x, y, ring: { x, y: avatarY, r: r + 5 } });
+    this.#spots.set(player.id, { player, x, y, ring: { x, y: avatarY, r: r + 4 } });
 
     const nameColor = player.eliminated ? p.css.ink3 : active ? p.css.accent : p.css.ink;
     const name = this.#text(x, y + 6, player.nickname, compact ? 13 : 15, nameColor, 700, slotWidth - 8);
@@ -351,10 +354,12 @@ export class TableScene extends Phaser.Scene {
     const p = this.#palette;
     if (m.reveal) {
       const r = m.reveal;
+      // 누가 선언하고 누가 라이어를 외쳤는지는 요약 패널 맨 위에 둔다.
+      // 360px에서는 위쪽 좌석의 주사위 줄과 겹쳐서 테이블 가운데에는 선언과 판정만 둔다.
       this.#text(
         cx,
         cy - (compact ? 38 : 48),
-        `${r.bid.quantity}개 × ${r.bid.face} 선언`,
+        m.revealText?.bidPart ?? `${r.bid.quantity}개 × ${r.bid.face} 선언`,
         compact ? 13 : 15,
         p.css.ink2,
         600,
