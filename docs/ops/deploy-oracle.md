@@ -35,7 +35,8 @@ GitHub Actions ──Tailscale(tailnet)──▶ VM의 SSH(22)   ※ 22번은 �
    - Shape: **VM.Standard.A1.Flex**, 2 OCPU / 12 GB (CLAUDE.md 운영 환경. 무료 한도는 계정 전체에 A1 4 OCPU / 24 GB)
    - Networking: 공인 IPv4 할당. 만든 뒤 **예약(Reserved) 공인 IP**로 바꿔 두면 인스턴스를 다시 만들어도 IP가 유지된다
    - SSH 키: 관리용 공개키 등록 (처음 접속과 비상용)
-2. "Out of capacity"가 나오면 다른 가용 도메인(AD)을 고르거나 시간을 두고 다시 시도한다.
+   - 새 VCN과 서브넷을 같이 만들면 그 화면에서는 공인 IPv4 토글을 켤 수 없는 경우가 있다. 그대로 만들고 인스턴스가 생긴 뒤 VNIC → IPv4 Addresses → Edit에서 예약 공인 IP를 붙인다
+2. "Out of host capacity"가 나오면 설정 문제가 아니라 무료 A1 자리가 없는 것이다. 가용 도메인이 하나뿐인 리전(서울, 춘천, 도쿄)은 AD를 바꿀 수 없으므로, **Save as stack**으로 설정을 저장하고 "부록 C"의 스크립트로 자동 재시도한다.
 
 ## 3. 네트워크 열기 🙋
 
@@ -241,3 +242,41 @@ curl -s https://api.<도메인>/healthz
 ## 부록 B. 더 나아가기
 
 - Tailscale의 OIDC 연동(Workload Identity Federation)을 쓰면 `TS_OAUTH_SECRET` 같은 장기 비밀값 없이 GitHub Actions가 tailnet에 들어올 수 있다. 설정이 조금 더 복잡해서 첫 배포 뒤에 옮기는 것을 권장한다.
+
+## 부록 C. A1 자리가 날 때까지 자동 재시도
+
+`infra/scripts/oci-retry-apply.sh`는 저장한 스택을 일정 간격(기본 10분)으로 다시 Apply하다가, 인스턴스가 만들어지면 맥 알림을 띄우고 멈춘다. "Out of host capacity"가 아닌 오류(권한, 한도 초과, 설정 오류)가 나면 재시도해도 소용없으므로 로그를 보여 주고 바로 멈춘다.
+
+### C-1. OCI CLI 설치와 API 키 등록 🙋
+
+```bash
+brew install oci-cli
+oci setup config
+```
+
+`oci setup config`가 묻는 값:
+
+- **User OCID, Tenancy OCID:** 콘솔 오른쪽 위 프로필 → My profile(User), Tenancy 화면에서 복사
+- **Region:** 홈 리전 (예: `ap-tokyo-1`)
+- **새 API 키를 만들지:** `Y`. 개인키는 `~/.oci/`에 저장되고 공개키(`oci_api_key_public.pem`)도 같이 생긴다
+
+그다음 콘솔 → My profile → **API keys → Add API key → Paste a public key**에 `oci_api_key_public.pem` 내용을 붙여 넣는다. `~/.oci/` 아래 파일은 비밀값이므로 저장소나 채팅에 올리지 않는다.
+
+확인:
+
+```bash
+oci iam region list --output table
+```
+
+### C-2. 실행
+
+스택 OCID는 Resource Manager → Stacks → 스택 화면의 OCID 옆 Copy로 복사한다.
+
+```bash
+caffeinate -i ./infra/scripts/oci-retry-apply.sh ocid1.ormstack.oc1....
+```
+
+- `caffeinate -i`는 기다리는 동안 맥이 잠들지 않게 한다. 노트북 덮개를 닫으면 멈추니 전원을 연결해 두고 열어 둔다
+- 간격을 바꾸려면 `INTERVAL_SECONDS=900`처럼 앞에 붙인다. 5분 미만은 API 요청 제한 때문에 거부한다
+- 성공하면 "2. VM 만들기"로 돌아가 예약 공인 IP를 붙인다
+- 며칠 동안 성공하지 못하면 1 OCPU / 6 GB로 줄이거나 Pay As You Go 전환을 검토한다 ("1. Oracle Cloud 가입" 4번)
