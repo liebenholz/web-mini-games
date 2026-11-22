@@ -1,0 +1,70 @@
+/*
+ * 시각 방향 v2: 흰 바탕 + 파스텔 + 바이올렛 강조 (DESIGN.md).
+ * 색은 모두 여기서만 정의한다. 컴포넌트는 의미 토큰만 쓴다.
+ * 대비: ink/ink-2/ink-3, accent, danger, success 모두 흰 바탕에서 4.5:1 이상.
+ */
+:root {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --surface: #f7f6fc;
+  --surface-2: #efedf8;
+  --line: #e6e3f1;
+  --line-strong: #d3cfe5;
+
+  --ink: #1d1b2c;
+  --ink-2: #4d4a63;
+  --ink-3: #66637d;
+
+  /* 강조: 주 행동, 내 차례, 공개 때 세는 눈 */
+  --accent: #6a4df4;
+  --accent-hover: #5a3de6;
+  --accent-ink: #ffffff;
+  --accent-soft: #eeeaff;
+
+  /* 라이어, 패배, 마지막 5초 */
+  --danger: #d6364b;
+  --danger-ink: #ffffff;
+  --danger-soft: #ffe8eb;
+
+  /* 준비 완료, 선언 성공 */
+  --success: #11795f;
+  --success-soft: #dcf4ea;
+
+  /* 좌석 아바타 파스텔 (배경 / 글자) */
+  --p1-bg: #ebe5ff;
+  --p1-fg: #5434d6;
+  --p2-bg: #d9f4ea;
+  --p2-fg: #0d6e53;
+  --p3-bg: #ffe5d6;
+  --p3-fg: #9c4314;
+  --p4-bg: #dceeff;
+  --p4-fg: #1f5c9e;
+  --p5-bg: #fff1bf;
+  --p5-fg: #775600;
+  --p6-bg: #ffe0ea;
+  --p6-fg: #a3284f;
+
+  --focus: #6a4df4;
+
+  --font-ui:
+    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    'Malgun Gothic', sans-serif;
+
+  --radius-sm: 10px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgb(29 27 44 / 0.06);
+  --shadow: 0 1px 2px rgb(29 27 44 / 0.06), 0 10px 28px -14px rgb(76 54 190 / 0.28);
+  --shadow-press: 0 1px 1px rgb(29 27 44 / 0.08);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+}

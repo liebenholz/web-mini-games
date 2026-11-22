@@ -1,0 +1,50 @@
+name: deploy-client
+
+# main 머지 시 운영 배포, PR마다 미리보기 배포 (Cloudflare Pages)
+# 필요한 값 (🙋 사람이 등록):
+#   secrets.CLOUDFLARE_API_TOKEN, secrets.CLOUDFLARE_ACCOUNT_ID
+#   vars.CF_PAGES_PROJECT   (Pages 프로젝트 이름)
+#   vars.VITE_SERVER_URL    (예: wss://api.<도메인>)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      ['packages/client/**', 'packages/rules/**', 'pnpm-lock.yaml', '.github/workflows/deploy-client.yml']
+  pull_request:
+    paths: ['packages/client/**', 'packages/rules/**']
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    # Cloudflare 설정(vars.CF_PAGES_PROJECT)을 등록하기 전과 포크 PR(비밀값 없음)에서는 건너뛴다
+    if: >-
+      vars.CF_PAGES_PROJECT != '' &&
+      (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter client... build
+        env:
+          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+      # wrangler-action은 워크스페이스에 pnpm으로 wrangler를 설치하다가 pnpm의 설치 스크립트 차단에 걸린다.
+      # 워크스페이스와 분리된 npx로 버전을 고정해 실행한다.
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+          BRANCH: ${{ github.event_name == 'push' && 'main' || github.head_ref }}
+        run: >-
+          npx --yes wrangler@4.166.0 pages deploy packages/client/dist
+          --project-name="$PROJECT"
+          --branch="$BRANCH"

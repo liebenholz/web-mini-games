@@ -1,0 +1,54 @@
+import {
+  createEndpoint,
+  createRouter,
+  defineRoom,
+  defineServer,
+  matchMaker,
+  type Presence,
+} from '@colyseus/core';
+import { WebSocketTransport } from '@colyseus/ws-transport';
+import { GAME_ID } from '@wmg/rules';
+import type { ServerConfig } from './config.js';
+import { LiarsDiceRoom } from './games/liars-dice/LiarsDiceRoom.js';
+import { activeRooms, runtime } from './games/liars-dice/runtime.js';
+
+export interface CreateServerOptions {
+  readonly config: Pick<ServerConfig, 'corsOrigins'>;
+  readonly presence?: Presence;
+  readonly driver?: matchMaker.MatchMakerDriver;
+}
+
+/** 허용한 Origin에만 매칭 HTTP API를 연다. 목록이 비어 있으면(개발) 모두 허용 */
+function configureCors(origins: readonly string[]): void {
+  const defaults = matchMaker.controller.DEFAULT_CORS_HEADERS;
+  matchMaker.controller.getCorsHeaders = (headers: Headers) => {
+    const origin = headers.get('origin') ?? '';
+    const allowed = origins.length === 0 ? origin || '*' : origins.includes(origin) ? origin : '';
+    return { ...defaults, 'Access-Control-Allow-Origin': allowed, Vary: 'Origin' };
+  };
+  // Cloudflare가 520~526을 자체 오류 페이지로 바꾸지 않도록 표준 HTTP 상태를 쓴다
+  matchMaker.controller.standardHttpStatus = true;
+}
+
+export function createGameServer({ config, presence, driver }: CreateServerOptions) {
+  configureCors(config.corsOrigins);
+
+  const healthz = createEndpoint('/healthz', { method: 'GET' }, async () => ({
+    status: runtime.draining ? 'draining' : 'ok',
+    rooms: activeRooms.size,
+    inProgress: [...activeRooms].filter((r) => r.inProgress).length,
+  }));
+
+  return defineServer({
+    rooms: {
+      [GAME_ID]: defineRoom(LiarsDiceRoom),
+    },
+    routes: createRouter({ healthz }),
+    transport: new WebSocketTransport({ pingInterval: 10_000, pingMaxRetries: 3 }),
+    ...(presence ? { presence } : {}),
+    ...(driver ? { driver } : {}),
+    // 종료 신호는 index.ts에서 직접 처리한다 (진행 중인 방을 기다린 뒤 종료)
+    gracefullyShutdown: false,
+    greet: false,
+  });
+}

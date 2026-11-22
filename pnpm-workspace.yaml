@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+
+# 설치 스크립트 허용 목록. msgpackr-extract는 네이티브 가속 모듈(선택)이라 끈다: 순수 JS로 동작해 arm64 빌드 문제가 없다.
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: false

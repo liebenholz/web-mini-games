@@ -1,0 +1,24 @@
+{
+  "name": "@wmg/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@colyseus/sdk": "^0.18.10",
+    "@wmg/rules": "workspace:*",
+    "phaser": "^4.2.1",
+    "pretendard": "^1.3.9"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "vite": "^8.3.8"
+  }
+}

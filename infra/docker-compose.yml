@@ -1,0 +1,100 @@
+# 운영 VM(Oracle Ampere A1, arm64) 한 대에서 전체 스택을 돌린다.
+# 값은 같은 폴더의 .env에서 읽는다 (커밋 금지, 키 목록은 루트 .env.example).
+#
+#   docker compose up -d
+#
+# 로컬에서 이미지를 직접 빌드하려면:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+
+name: wmg
+
+services:
+  server:
+    # 운영: deploy-server.yml이 ghcr.io/<owner>/web-mini-games/server:<tag> 를 넣는다
+    image: ${SERVER_IMAGE:-wmg-server:local}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: '2567'
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      SHUTDOWN_DRAIN_SECONDS: ${SHUTDOWN_DRAIN_SECONDS:-900}
+      ALONE_WITH_BOTS_POLICY: ${ALONE_WITH_BOTS_POLICY:-continue}
+    # 진행 중인 판이 끝날 때까지 기다린다 (SHUTDOWN_DRAIN_SECONDS보다 조금 길게)
+    stop_grace_period: 16m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [internal, edge]
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    # 호스트에 포트를 열지 않는다 (CLAUDE.md 보안)
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      [
+        'redis-server',
+        '--save',
+        '',
+        '--appendonly',
+        'no',
+        '--maxmemory',
+        '256mb',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [internal]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-localhost}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [server]
+    networks: [edge]
+
+networks:
+  # DB와 Redis는 외부로 나가지 않는 내부 네트워크에만 둔다
+  internal:
+    internal: true
+  edge: {}
+
+volumes:
+  pgdata: {}
+  caddy_data: {}
+  caddy_config: {}
