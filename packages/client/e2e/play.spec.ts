@@ -45,6 +45,15 @@ test('M4: 사람 1명 + 봇 2명으로 한 판 완주 (360px)', async ({ page })
   await bid.click();
   await expect(page.locator('.statusbar .total')).toContainText('9');
 
+  // 공개 중에는 선언 패널 자리에 판정 요약이 나오고 (E2E는 시간 배율 때문에 공개가 짧아 붙는 순간을 기다린다),
+  // 다음 라운드에는 직전 판정 버튼이 생긴다
+  const summary = await page.waitForSelector('[data-testid=reveal-summary]', {
+    state: 'attached',
+    timeout: 60_000,
+  });
+  expect(await summary.innerText()).toMatch(/라이어![\s\S]*와일드/);
+  await page.waitForSelector('[data-testid=recall-open]', { state: 'attached', timeout: 60_000 });
+
   // 이후에는 무입력: 2턴 타임아웃 뒤 자동 진행 (S-07) → 게임 종료
   const result = page.getByTestId('result');
   await expect(result).toBeVisible({ timeout: 150_000 });
