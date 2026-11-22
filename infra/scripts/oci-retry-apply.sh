@@ -15,9 +15,15 @@
 # 준비: OCI CLI 설치와 API 키 등록 (docs/ops/deploy-oracle.md "부록 C").
 # 맥이 잠들지 않게 하려면:  caffeinate -i ./infra/scripts/oci-retry-apply.sh <stack-ocid>
 #
+# 멈추지 않고 기다리는 경우:
+#   - 자리 부족(Out of host capacity): 다음 간격에 다시 시도
+#   - 일시적인 API 오류(TooManyRequests 같은 요청 제한, 503, 네트워크 끊김): 간격을 두 배씩 늘려(최대 6배) 다시 시도.
+#     정상 응답을 한 번 받으면 원래 간격으로 돌아온다
+#
 # 멈추는 경우:
 #   - 성공(SUCCEEDED): 종료 코드 0, 알림 표시
 #   - 자리 부족이 아닌 실패(권한, 한도 초과, 설정 오류): 종료 코드 1. 재시도해도 소용없으므로 로그를 보여 주고 멈춘다
+#   - 같은 스택에 이 스크립트가 이미 돌고 있음: 종료 코드 1 (요청이 두 배가 되어 요청 제한에 걸리므로)
 #   - MAX_ATTEMPTS 도달: 종료 코드 2
 #   - Ctrl+C
 
@@ -34,6 +40,9 @@ OCI="${OCI_BIN:-oci}"
 CAPACITY_PATTERN='Out of host capacity|Out of capacity|OutOfCapacity|out of capacity'
 # 다른 작업이 이미 돌고 있을 때 (409). 기다렸다 다시 시도한다
 BUSY_PATTERN='409|Conflict|already (a|an) (job|operation)|IncorrectState'
+# 일시적인 API 오류: 요청 제한(429), 서버 일시 장애(5xx), 네트워크 끊김. 간격을 늘려 다시 시도한다
+THROTTLE_PATTERN='TooManyRequests|Too many requests|429|TransientServiceError|ServiceUnavailable|503|InternalServerError|RequestException|timed out|Timeout|Connection(Error| reset| refused| aborted)|Max retries exceeded|NameResolutionError'
+MAX_BACKOFF=6
 
 log() { printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
@@ -56,10 +65,33 @@ command -v "$OCI" >/dev/null 2>&1 || fail "OCI CLI(oci)를 찾을 수 없습니�
 
 oci_cli() { "$OCI" --profile "$PROFILE" "$@"; }
 
-# 시작 전에 인증과 스택 접근을 확인한다 (키 설정이 틀렸으면 여기서 바로 멈춘다)
-stack_name="$(oci_cli resource-manager stack get --stack-id "$STACK_ID" --query 'data."display-name"' --raw-output 2>&1)" \
-  || fail "스택을 읽지 못했습니다. API 키 설정과 스택 OCID를 확인하세요:
+# 같은 스택에 두 번 띄우지 않는다 (요청이 두 배가 되어 요청 제한에 걸린다)
+LOCK_DIR="${TMPDIR:-/tmp}/oci-retry-apply.${STACK_ID##*.}.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  other="$(cat "$LOCK_DIR/pid" 2>/dev/null || true)"
+  if [[ -n "$other" ]] && kill -0 "$other" 2>/dev/null; then
+    fail "이 스택에 재시도 스크립트가 이미 실행 중입니다 (PID $other). 그 터미널을 확인하세요"
+  fi
+  # 이전 실행이 비정상 종료하며 남긴 잠금
+  rm -rf "$LOCK_DIR"
+  mkdir "$LOCK_DIR" || fail "잠금 폴더를 만들지 못했습니다: $LOCK_DIR"
+fi
+echo $$ >"$LOCK_DIR/pid"
+trap 'rm -rf "$LOCK_DIR"' EXIT
+
+# 시작 전에 인증과 스택 접근을 확인한다 (키 설정이 틀렸으면 여기서 바로 멈춘다. 요청 제한이면 기다렸다 다시)
+for check in 1 2 3 4 5; do
+  if stack_name="$(oci_cli resource-manager stack get --stack-id "$STACK_ID" --query 'data."display-name"' --raw-output 2>&1)"; then
+    break
+  fi
+  if grep -Eqi "$THROTTLE_PATTERN" <<<"$stack_name" && (( check < 5 )); then
+    log "일시적인 API 오류로 스택을 읽지 못했습니다. 2분 뒤 다시 확인합니다 ($check/5)"
+    sleep 120
+    continue
+  fi
+  fail "스택을 읽지 못했습니다. API 키 설정과 스택 OCID를 확인하세요:
 $stack_name"
+done
 log "스택 '$stack_name'에 Apply를 반복합니다. 간격 ${INTERVAL_SECONDS}초, 최대 ${MAX_ATTEMPTS}회(0=무제한). 멈추려면 Ctrl+C"
 
 job_error_text() {
@@ -69,6 +101,7 @@ job_error_text() {
 }
 
 attempt=0
+backoff=1
 while :; do
   attempt=$((attempt + 1))
   log "시도 #$attempt: Apply 작업을 만듭니다"
@@ -77,19 +110,24 @@ while :; do
       --stack-id "$STACK_ID" \
       --execution-plan-strategy AUTO_APPROVED \
       --query 'data.id' --raw-output 2>&1)"; then
-    if grep -Eqi "$BUSY_PATTERN" <<<"$job_id"; then
+    if grep -Eqi "$THROTTLE_PATTERN" <<<"$job_id"; then
+      backoff=$(( backoff * 2 > MAX_BACKOFF ? MAX_BACKOFF : backoff * 2 ))
+      log "일시적인 API 오류(요청 제한 등)입니다. 간격을 ${backoff}배로 늘려 다시 시도합니다"
+    elif grep -Eqi "$BUSY_PATTERN" <<<"$job_id"; then
       log "다른 작업이 이미 실행 중입니다. 다음 간격에 다시 시도합니다"
     else
       fail "Apply 작업을 만들지 못했습니다:
 $job_id"
     fi
   else
+    backoff=1
     log "작업 $job_id 실행 중. 끝날 때까지 기다립니다"
     state=""
     waited=0
+    # 상태 확인도 요청이므로 30초 간격으로만 묻는다
     while (( waited < JOB_TIMEOUT_SECONDS )); do
-      sleep 20
-      waited=$((waited + 20))
+      sleep 30
+      waited=$((waited + 30))
       state="$(oci_cli resource-manager job get --job-id "$job_id" --query 'data."lifecycle-state"' --raw-output 2>/dev/null || echo UNKNOWN)"
       case "$state" in
         SUCCEEDED | FAILED | CANCELED) break ;;
@@ -127,7 +165,7 @@ ${errors:-(오류 로그를 읽지 못했습니다. 콘솔의 Resource Manager �
     exit 2
   fi
   # 매번 같은 순간에 몰리지 않게 0~59초를 더한다
-  pause=$((INTERVAL_SECONDS + RANDOM % 60))
+  pause=$((INTERVAL_SECONDS * backoff + RANDOM % 60))
   log "${pause}초 뒤에 다시 시도합니다"
   sleep "$pause"
 done
