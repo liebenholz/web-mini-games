@@ -32,7 +32,8 @@ GitHub Actions ──Tailscale(tailnet)──▶ VM의 SSH(22)   ※ 22번은 �
 
 1. Compute → Instances → Create instance
    - Image: **Canonical Ubuntu 24.04** (aarch64)
-   - Shape: **VM.Standard.A1.Flex**, 2 OCPU / 12 GB (CLAUDE.md 운영 환경. 무료 한도는 계정 전체에 A1 4 OCPU / 24 GB)
+   - Shape: **VM.Standard.A1.Flex**, 1 OCPU / 6 GB (CLAUDE.md 운영 환경. 작은 사양이 자리를 잡기 쉽다. 무료 한도는 계정 전체에 A1 4 OCPU / 24 GB)
+   - 나중에 늘리려면 인스턴스 → Edit → Shape에서 OCPU와 메모리를 바꾼다. 재부팅이 한 번 필요하고, 같은 호스트에 여유가 없으면 거절될 수 있다. 늘리면 `infra/docker-compose.yml`의 서버 메모리 한도도 함께 올린다
    - Networking: 공인 IPv4 할당. 만든 뒤 **예약(Reserved) 공인 IP**로 바꿔 두면 인스턴스를 다시 만들어도 IP가 유지된다
    - SSH 키: 관리용 공개키 등록 (처음 접속과 비상용)
    - 새 VCN과 서브넷을 같이 만들면 그 화면에서는 공인 IPv4 토글을 켤 수 없는 경우가 있다. 그대로 만들고 인스턴스가 생긴 뒤 VNIC → IPv4 Addresses → Edit에서 예약 공인 IP를 붙인다
@@ -281,4 +282,5 @@ caffeinate -i ./infra/scripts/oci-retry-apply.sh ocid1.ormstack.oc1....
 - `TooManyRequests` 같은 일시적인 API 오류가 나면 멈추지 않고 간격을 두 배씩(최대 6배) 늘려 다시 시도한다. 정상 응답을 받으면 원래 간격으로 돌아온다
 - 같은 스택에 스크립트를 두 번 띄우면 두 번째는 바로 멈춘다 (요청이 두 배가 되어 요청 제한에 걸리므로)
 - 성공하면 "2. VM 만들기"로 돌아가 예약 공인 IP를 붙인다
-- 며칠 동안 성공하지 못하면 1 OCPU / 6 GB로 줄이거나 Pay As You Go 전환을 검토한다 ("1. Oracle Cloud 가입" 4번)
+- 저장한 스택의 사양은 변수가 아니라 Terraform 코드(`main.tf`의 `shape_config`)에 들어 있다. 바꾸려면 Resource Manager → 스택 → Edit → Edit stack에서 수정한 설정을 올린다. 돌고 있는 스크립트는 다음 시도부터 새 설정을 쓴다
+- 며칠 동안 성공하지 못하면 Pay As You Go 전환을 검토한다 ("1. Oracle Cloud 가입" 4번)
