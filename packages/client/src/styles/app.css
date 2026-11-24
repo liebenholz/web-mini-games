@@ -441,6 +441,34 @@ p {
   color: var(--ink);
 }
 
+.room-code .code-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 가려도 자리 크기가 바뀌지 않게 같은 글자 수(6)로 채운다 */
+.room-code .code.masked {
+  letter-spacing: 0.3em;
+  color: var(--ink-2);
+}
+
+.code-toggle {
+  min-height: 40px;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 0.7);
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.code-toggle .icon {
+  width: 18px;
+  height: 18px;
+}
+
 .room-code .actions-inline {
   display: flex;
   gap: var(--space-2);
@@ -704,14 +732,6 @@ p {
   gap: var(--space-2);
   padding: max(var(--space-2), env(safe-area-inset-top)) var(--space-3) var(--space-2);
   border-bottom: 1px solid var(--line);
-}
-
-.statusbar .room {
-  font-size: 0.875rem;
-  color: var(--ink-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .statusbar .total {
@@ -1546,4 +1566,89 @@ button.game-main:focus-visible,
   color: var(--ink-2);
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+/* ───── 추방 버튼과 확인 팝업 (E-15) ───── */
+.btn-kick {
+  flex: none;
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-color: transparent;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.btn-kick:hover:not(:disabled) {
+  background: var(--danger);
+  color: var(--danger-ink);
+}
+
+.btn-kick .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 14;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgb(29 27 44 / 0.4);
+  animation: fade 160ms var(--ease-out);
+}
+
+.confirm-dialog {
+  width: min(360px, 100%);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  box-shadow: 0 20px 48px -20px rgb(29 27 44 / 0.5);
+  text-align: center;
+  animation: rise 200ms var(--ease-out);
+}
+
+.confirm-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--space-3);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.confirm-icon.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.confirm-icon .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.confirm-dialog h2 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.confirm-dialog p {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  margin-bottom: var(--space-5);
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.confirm-actions .btn {
+  min-height: 48px;
 }

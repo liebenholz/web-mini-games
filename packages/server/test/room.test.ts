@@ -233,6 +233,22 @@ describe('LiarsDiceRoom 통합 (M2)', () => {
     expect(first.messages.find((m) => m.type === 'error')?.payload.code).toBe('DUPLICATE_SESSION');
   });
 
+  it('E-15: 내보낸 참가자는 KICKED(4003)로 연결이 닫히고 같은 방에 다시 못 들어온다', async () => {
+    const host = await createRoom();
+    const guestId = newGuest();
+    const guest = await joinRoom(host.room.roomId, guestId, '민준');
+    let leftCode = 0;
+    guest.room.onLeave((code) => (leftCode = code));
+    host.room.send('kick_player', { playerId: guest.playerId });
+    await waitFor(() => leftCode !== 0);
+    expect(leftCode).toBe(4003);
+    expect(guest.messages.find((m) => m.type === 'error')?.payload.code).toBe('KICKED');
+    const state = host.room.state as { players: Map<string, unknown> };
+    await waitFor(() => !state.players.has(guest.playerId));
+    await expect(joinRoom(host.room.roomId, guestId, '민준')).rejects.toThrow(/KICKED/);
+    await joinRoom(host.room.roomId); // 다른 사람은 들어올 수 있다
+  });
+
   it('E-12: 없는 방 코드, 가득 찬 방은 거부', async () => {
     await expect(
       colyseus.sdk.joinById('ZZZZZZ', { guestId: newGuest(), nickname: '누구' }),

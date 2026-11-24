@@ -27,6 +27,7 @@ const CLIENT_MESSAGES: readonly ClientMessageType[] = [
   'set_options',
   'add_bot',
   'remove_bot',
+  'kick_player',
 ];
 const GUEST_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 /** 매칭/HTTP 오류 코드 (클라이언트는 message의 에러 코드 이름을 본다) */
@@ -239,6 +240,20 @@ export class LiarsDiceRoom extends Room<{ state: LiarsDiceState }> {
     onListingChange: (listed: boolean) => {
       // 랜덤 매칭은 공개·대기실·빈자리 있는 방만 찾는다. 코드(joinById)로는 계속 들어올 수 있다
       void this.setPrivate(!listed);
+    },
+    onKick: (playerId: string) => {
+      // 매핑을 먼저 지워 onLeave가 한 번 더 처리하지 않게 한다 (엔진이 직접 퇴장 처리)
+      const pending = this.#reconnections.get(playerId);
+      if (pending) {
+        this.#reconnections.delete(playerId);
+        pending.reject(new Error('kicked by host'));
+      }
+      const client = this.#playerToClient.get(playerId);
+      this.#playerToClient.delete(playerId);
+      if (!client) return;
+      this.#sessionToPlayer.delete(client.sessionId);
+      client.send('error', this.#errorPayload('KICKED', '방장이 이 방에서 내보냈습니다.'));
+      client.leave(CLOSE_CODES.KICKED);
     },
   };
 }

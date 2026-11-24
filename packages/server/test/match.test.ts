@@ -55,6 +55,42 @@ describe('로비 (명세 4장)', () => {
     expect([...match.state.players.values()].filter((p) => p.isBot)).toHaveLength(3);
   });
 
+  it('E-15: 추방은 방장만, 대기실에서, 사람만. 추방된 게스트는 이 방에 다시 못 들어온다', () => {
+    const { match, io } = setup({ maxPlayers: 4 });
+    const host = joinOk(match, 'g1', '방장');
+    const b = joinOk(match, 'g2', '민준');
+    const c = joinOk(match, 'g3', '수아');
+    expect(match.handle(host, 'add_bot', {})).toEqual({ ok: true });
+    const bot = [...match.state.players.values()].find((p) => p.isBot)!;
+
+    expect(match.handle(b, 'kick_player', { playerId: c })).toMatchObject({ code: 'NOT_HOST' });
+    expect(match.handle(host, 'kick_player', { playerId: host })).toMatchObject({ code: 'INVALID_MESSAGE' });
+    expect(match.handle(host, 'kick_player', { playerId: bot.id })).toMatchObject({
+      code: 'INVALID_MESSAGE',
+    });
+    expect(match.handle(host, 'kick_player', { playerId: 'nobody' })).toMatchObject({
+      code: 'INVALID_MESSAGE',
+    });
+
+    expect(match.handle(host, 'kick_player', { playerId: b })).toEqual({ ok: true });
+    expect(io.kicked).toEqual([b]);
+    expect(match.state.players.has(b)).toBe(false);
+    expect(match.state.hostId).toBe(host);
+
+    // 같은 게스트는 거부, 다른 게스트는 그 자리에 들어올 수 있다
+    expect(match.join('g2', '민준')).toEqual({ ok: false, code: 'KICKED' });
+    expect(match.join('g4', '새사람')).toMatchObject({ ok: true });
+  });
+
+  it('E-15: 게임이 시작되면 추방 할 수 없다', () => {
+    const { match } = setup({ maxPlayers: 2, fillWithBots: false });
+    const host = joinOk(match, 'g1', '방장');
+    const b = joinOk(match, 'g2', '민준');
+    match.handle(b, 'set_ready', { ready: true });
+    expect(match.handle(host, 'start_game', {})).toEqual({ ok: true });
+    expect(match.handle(host, 'kick_player', { playerId: b })).toMatchObject({ code: 'INVALID_STATE' });
+  });
+
   it('방장만 옵션 변경·봇 추가/제거, 범위 밖 옵션은 INVALID_OPTIONS', () => {
     const { match } = setup();
     const a = joinOk(match, 'g1', '가나');

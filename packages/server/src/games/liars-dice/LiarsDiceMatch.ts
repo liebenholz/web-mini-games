@@ -69,6 +69,8 @@ export interface MatchIO {
   onAbandoned(): void;
   /** 랜덤 매칭 목록 노출 여부가 바뀌었다 */
   onListingChange(listed: boolean): void;
+  /** 방장이 이 참가자를 내보냈다. 연결을 KICKED로 닫는다 */
+  onKick(playerId: string): void;
 }
 
 interface Envelope {
@@ -140,6 +142,8 @@ export class LiarsDiceMatch {
 
   #options: RoomOptions;
   #members = new Map<string, Member>();
+  /** 방장이 내보낸 게스트 ID. 방이 끝날 때까지 다시 들어올 수 없다 */
+  readonly #kicked = new Set<string>();
   #byGuest = new Map<string, string>();
   #bySeat = new Map<number, Member>();
   #joinCounter = 0;
@@ -197,6 +201,7 @@ export class LiarsDiceMatch {
   // ───────────────────────── 입장 / 퇴장 ─────────────────────────
 
   join(guestId: string, rawNickname: unknown): JoinResult {
+    if (this.#kicked.has(guestId)) return { ok: false, code: 'KICKED' };
     const existingId = this.#byGuest.get(guestId);
     const existing = existingId ? this.#members.get(existingId) : undefined;
     if (existing && existing.present) {
@@ -314,6 +319,8 @@ export class LiarsDiceMatch {
         return this.#addBot(m);
       case 'remove_bot':
         return this.#removeBot(m, body);
+      case 'kick_player':
+        return this.#kickPlayer(m, body);
       case 'start_game':
         return this.#startGame(m);
       case 'bid':
@@ -366,6 +373,20 @@ export class LiarsDiceMatch {
     if (!target || !target.originallyBot) return fail('INVALID_MESSAGE', '봇을 찾을 수 없습니다.');
     this.#removeMember(target);
     this.#updateListing();
+    return OK;
+  }
+
+  /** 방장이 대기실에서 사람 참가자를 내보낸다. 같은 게스트 ID는 이 방에 다시 들어올 수 없다 */
+  #kickPlayer(m: Member, body: Record<string, unknown>): HandleResult {
+    if (this.phase !== 'WAITING') return fail('INVALID_STATE', '대기실에서만 내보낼 수 있습니다.');
+    if (this.state.hostId !== m.id) return fail('NOT_HOST', '방장만 내보낼 수 있습니다.');
+    const target = typeof body.playerId === 'string' ? this.#members.get(body.playerId) : undefined;
+    // 봇은 remove_bot으로 뺀다. 자기 자신은 내보낼 수 없다
+    if (!target || target.originallyBot || target.id === m.id)
+      return fail('INVALID_MESSAGE', '내보낼 참가자를 찾을 수 없습니다.');
+    if (target.guestId) this.#kicked.add(target.guestId);
+    this.#io.onKick(target.id);
+    this.leave(target.id);
     return OK;
   }
 

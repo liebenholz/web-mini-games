@@ -37,6 +37,8 @@ export const ERROR_CODES = [
   'INVALID_NICKNAME',
   'INVALID_MESSAGE',
   'SERVER_DRAINING',
+  // 방장이 대기실에서 내보냈다. 같은 방에 다시 들어올 수 없다
+  'KICKED',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
@@ -44,6 +46,7 @@ export type ErrorCode = (typeof ERROR_CODES)[number];
 export const CLOSE_CODES = {
   DUPLICATE_SESSION: 4001,
   RATE_LIMITED: 4002,
+  KICKED: 4003,
 } as const;
 
 /** 입장 옵션 (join / create) */
@@ -69,6 +72,8 @@ export interface ClientMessages {
   /** 방장만 (명세 8장 대기실 "봇 추가") */
   add_bot: Record<string, never>;
   remove_bot: { readonly playerId: string };
+  /** 방장만, 대기실에서. 사람 참가자를 내보낸다 (이 방에는 다시 못 들어온다) */
+  kick_player: { readonly playerId: string };
 }
 export type ClientMessageType = keyof ClientMessages;
 

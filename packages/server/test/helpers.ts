@@ -33,6 +33,10 @@ export class FakeIO implements MatchIO {
   onListingChange(listed: boolean): void {
     this.listed.push(listed);
   }
+  readonly kicked: string[] = [];
+  onKick(playerId: string): void {
+    this.kicked.push(playerId);
+  }
   lastBroadcast(type: string): Sent | undefined {
     return [...this.broadcasts].reverse().find((s) => s.type === type);
   }
