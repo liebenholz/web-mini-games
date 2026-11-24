@@ -12,8 +12,8 @@
 
 ## 운영 환경 (설계 제약)
 
-- 게임 서버는 **Oracle Cloud Always Free Ampere A1 VM 1대 (ARM64, 1 OCPU / 6GB RAM)** 에서 Docker로 실행한다.
-  무료 A1 자리를 잡기 쉽도록 작게 시작했다. 부족해지면 무료 한도(4 OCPU / 24GB) 안에서 늘릴 수 있지만, 설계는 1 OCPU / 6GB를 기준으로 한다.
+- 게임 서버는 **Oracle Cloud Always Free Ampere A1 VM 1대 (ARM64, 2 OCPU / 12GB RAM)** 에서 Docker로 실행한다.
+  1 OCPU / 6GB로 만든 뒤 2 OCPU / 12GB로 늘렸다. 무료 한도(계정 합계 4 OCPU / 24GB) 안이라 비용은 없다. 줄이는 것은 언제든 되지만 늘릴 때는 그 순간 호스트에 자리가 있어야 하므로 줄이지 않는다.
 - 서버 한 대가 게임 서버, Redis, PostgreSQL, 리버스 프록시를 함께 돌린다. **서버 성능과 안정성이 최우선**이다.
 - 웹 클라이언트는 정적 파일로 빌드해서 **Cloudflare Pages**에 배포한다. 게임 서버는 정적 파일을 서빙하지 않는다.
 - 모든 Docker 이미지와 네이티브 의존성은 **linux/arm64**에서 동작해야 한다. x86 전용 바이너리를 쓰는 패키지는 도입하지 않는다.
