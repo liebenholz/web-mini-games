@@ -310,8 +310,37 @@ p {
 }
 
 /* ───── 로비 ───── */
+.lobby-nav {
+  margin: calc(var(--space-2) * -1) 0 0 calc(var(--space-3) * -1);
+}
+
+.back-link {
+  min-height: 44px;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.back-link .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.field-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.field-label .hint {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
 .lobby-hero {
-  padding-top: var(--space-6);
+  padding-top: var(--space-2);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -1355,4 +1384,166 @@ body.sheet-open {
 .rules-foot {
   padding: var(--space-3) var(--space-5) max(var(--space-4), env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
+}
+
+/* ───── 메인 (게임 선택) ───── */
+.hub-hero {
+  padding-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.hub-hero .eyebrow {
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.game-list {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.game-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.game-main {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+button.game-main {
+  cursor: pointer;
+  transition: background 160ms var(--ease-out);
+}
+
+button.game-main:hover {
+  background: var(--surface);
+}
+
+button.game-main:focus-visible,
+.game-rules:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.game-icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+}
+
+.game-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.game-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.game-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.game-name {
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+
+.game-meta {
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.game-tagline {
+  margin-top: var(--space-1);
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.game-go {
+  flex: none;
+  align-self: center;
+  color: var(--ink-3);
+}
+
+.game-go .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.game-rules {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) 0 calc(var(--space-4) + 48px + var(--space-3));
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  color: var(--p1-fg);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.game-rules:hover {
+  background: var(--surface);
+}
+
+.game-rules .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.game-card.soon {
+  background: var(--surface);
+  border-style: dashed;
+}
+
+.game-card.soon .game-icon {
+  opacity: 0.55;
+}
+
+.game-card.soon .game-name {
+  color: var(--ink-3);
+}
+
+.badge-soon {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  font-weight: 700;
 }

@@ -1,6 +1,6 @@
 import { countFace, DEFAULT_ROOM_OPTIONS } from '@wmg/rules';
 import { describe, expect, it } from 'vitest';
-import { RULE_STEPS, WILD_EXAMPLE } from '../src/screens/rulesSheet.js';
+import { RULE_STEPS, WILD_EXAMPLE } from '../src/games/liars-dice/rules.js';
 
 describe('게임 규칙 시트', () => {
   it('R-09: 와일드 예시가 룰 엔진의 개수 세기와 같다 (선언 성공)', () => {
