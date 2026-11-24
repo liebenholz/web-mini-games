@@ -1,4 +1,6 @@
-import { GAME_ID, gomoku, oneCard } from '@wmg/rules';
+import { bulls, GAME_ID, gomoku, oneCard } from '@wmg/rules';
+import { bullsFlow } from './bulls-and-cows/flow.js';
+import { bullsRules } from './bulls-and-cows/rules.js';
 import { CATALOG, type GameCatalogEntry } from './catalog.js';
 import { asFlow, type GameFlow } from './flow.js';
 import { gomokuFlow } from './gomoku/flow.js';
@@ -25,6 +27,7 @@ const IMPLEMENTED: Record<string, Pick<GameInfo, 'roomType' | 'rules' | 'flow'>>
   'liars-dice': { roomType: GAME_ID, rules: liarsDiceRules, flow: asFlow(liarsDiceFlow) },
   gomoku: { roomType: gomoku.GOMOKU_ROOM_TYPE, rules: gomokuRules, flow: asFlow(gomokuFlow) },
   'one-card': { roomType: oneCard.ONE_CARD_ROOM_TYPE, rules: oneCardRules, flow: asFlow(oneCardFlow) },
+  'bulls-and-cows': { roomType: bulls.BULLS_ROOM_TYPE, rules: bullsRules, flow: asFlow(bullsFlow) },
 };
 
 export const GAMES: readonly GameInfo[] = CATALOG.map((entry) => {

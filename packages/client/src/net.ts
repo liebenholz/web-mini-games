@@ -88,6 +88,7 @@ export function describeError(code: string): string {
     FORBIDDEN_MOVE: '흑은 이 자리에 둘 수 없습니다 (금수).',
     INVALID_CARD: '지금 낼 수 없는 카드입니다.',
     INVALID_SUIT: '모양을 다시 골라 주세요.',
+    INVALID_GUESS: '0~9 숫자를 겹치지 않게 자릿수만큼 넣어 주세요.',
     RATE_LIMITED: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
     NETWORK: '서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.',
   };

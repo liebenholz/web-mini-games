@@ -1,17 +1,18 @@
 import { h, svg } from '../dom.js';
 import { SITE } from '../games/catalog.js';
 import type { GameCategory, GameInfo } from '../games/registry.js';
-import { dieSvg, icons } from '../icons.js';
+import { dieSvg, icons, textTileSvg } from '../icons.js';
 import { openRulesSheet } from './rulesSheet.js';
 
 const CATEGORY_ICON: Record<GameCategory, string> = {
   dice: dieSvg(5, ''),
   card: icons.cards,
   board: icons.board,
+  number: textTileSvg('#'),
 };
 
 /** 카테고리마다 파스텔 톤 하나 (Phase 3 카테고리 화면에서도 같은 색을 쓴다) */
-const CATEGORY_TONE: Record<GameCategory, number> = { dice: 1, board: 2, card: 3 };
+const CATEGORY_TONE: Record<GameCategory, number> = { dice: 1, board: 2, card: 3, number: 4 };
 
 function gameCard(game: GameInfo, onOpen: (game: GameInfo) => void): HTMLElement {
   const available = game.status === 'available';

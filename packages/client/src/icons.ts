@@ -106,3 +106,8 @@ export function boardStonesSvg(count: number): string {
 export function cardTileSvg(symbol: string): string {
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor">${symbol}</text></svg>`;
 }
+
+/** 글자 하나를 넣은 둥근 사각형 (숫자야구 로비 장식: 1 2 3 S B) */
+export function textTileSvg(text: string): string {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" fill="currentColor">${text}</text></svg>`;
+}
