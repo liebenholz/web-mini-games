@@ -101,3 +101,8 @@ export function boardStonesSvg(count: number): string {
     .join('');
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v16M12 4v16M16 4v16M4 8h16M4 12h16M4 16h16" stroke="currentColor" stroke-width="0.9" opacity="0.55"/>${stones}</svg>`;
 }
+
+/** 원카드 로비 장식: 카드 테두리 안에 모양 (♠ ♥ ◆ ♣ ★) */
+export function cardTileSvg(symbol: string): string {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor">${symbol}</text></svg>`;
+}

@@ -4,10 +4,14 @@ import { CATALOG } from '../src/games/catalog.js';
 import { findGame, GAMES, gameByRoomType } from '../src/games/registry.js';
 
 describe('게임 목록', () => {
-  it('거짓말쟁이 주사위와 오목은 플레이할 수 있고, 원카드는 준비 중', () => {
-    expect(GAMES.filter((g) => g.status === 'available').map((g) => g.id)).toEqual(['liars-dice', 'gomoku']);
+  it('Phase 2 M3: 거짓말쟁이 주사위, 오목, 원카드 모두 플레이할 수 있다', () => {
+    expect(GAMES.filter((g) => g.status === 'available').map((g) => g.id)).toEqual([
+      'liars-dice',
+      'gomoku',
+      'one-card',
+    ]);
     expect(findGame('gomoku')?.roomType).toBe('gomoku');
-    expect(findGame('one-card')?.status).toBe('coming-soon');
+    expect(findGame('one-card')?.roomType).toBe('one_card');
   });
 
   it('준비 중인 게임은 방 종류와 규칙이 없다 (누를 수 없음)', () => {

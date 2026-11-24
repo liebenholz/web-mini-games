@@ -54,6 +54,6 @@ export const CATALOG: readonly GameCatalogEntry[] = [
     players: '2~6명',
     minutes: '10분',
     category: 'card',
-    status: 'coming-soon',
+    status: 'available',
   },
 ];

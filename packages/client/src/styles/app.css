@@ -2092,3 +2092,499 @@ button.game-main:focus-visible,
 .gomoku-board:focus:not(:focus-visible) {
   outline: none;
 }
+
+/* ───── 원카드 (one-card.md 11장, 시안) ───── */
+.fixed-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--p5-bg);
+  color: var(--p5-fg);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.fixed-rules b {
+  margin-bottom: 2px;
+}
+
+.oc-card {
+  --w: 46px;
+  width: var(--w);
+  height: calc(var(--w) * 1.42);
+  border-radius: 7px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px 5px;
+  font-weight: 800;
+  font-size: 0.8125rem;
+  line-height: 1;
+  color: var(--ink);
+  user-select: none;
+}
+
+.oc-card.red {
+  color: var(--danger);
+}
+
+.oc-card .oc-pip {
+  align-self: center;
+  margin-bottom: 4px;
+  font-size: calc(var(--w) * 0.4);
+}
+
+.oc-card.joker.mono {
+  background: var(--surface-2);
+}
+
+.oc-card.joker.color {
+  background: var(--p5-bg);
+  color: var(--p5-fg);
+}
+
+.oc-card.joker .oc-corner {
+  font-size: 0.6875rem;
+}
+
+.oc-card.big {
+  --w: 64px;
+  font-size: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.oc-card.mini {
+  --w: 30px;
+  font-size: 0.625rem;
+  padding: 2px 3px;
+}
+
+.oc-card.empty {
+  --w: 64px;
+  border-style: dashed;
+}
+
+.oc {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.oc-bar {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  background: var(--bg);
+}
+
+.oc-direction {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.oc-notice {
+  margin: var(--space-2) var(--space-3) 0;
+}
+
+.oc-opps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) 0;
+}
+
+.oc-opp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: var(--space-2) 4px;
+  border-radius: var(--radius);
+  background: var(--bg);
+  border: 2px solid transparent;
+  min-width: 0;
+}
+
+.oc-opp.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.oc-opp.out {
+  opacity: 0.55;
+}
+
+.oc-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.oc-tag {
+  flex: none;
+  font-size: 0.6875rem;
+  border-radius: var(--radius-pill);
+  padding: 1px 6px;
+}
+
+.oc-tag.one {
+  background: var(--danger);
+  color: var(--danger-ink);
+}
+
+.oc-tag.done {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.oc-tag.out {
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+
+.oc-backs {
+  display: flex;
+  height: 14px;
+}
+
+.oc-backs i {
+  width: 9px;
+  height: 13px;
+  margin-left: -3px;
+  border-radius: 2px;
+  border: 1px solid var(--bg);
+  background: var(--accent);
+}
+
+.oc-count,
+.oc-sub {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.oc-sub.off {
+  color: var(--danger);
+}
+
+.oc-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3) var(--space-2);
+}
+
+.oc-pile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.oc-deck {
+  width: 64px;
+  height: 91px;
+  border-radius: 8px;
+  background: repeating-linear-gradient(45deg, var(--accent) 0 6px, var(--accent-hover) 6px 12px);
+  display: grid;
+  place-items: center;
+  color: var(--accent-ink);
+  font-weight: 800;
+  font-size: 0.8125rem;
+}
+
+.oc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 28px;
+}
+
+.oc-pill {
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  background: var(--bg);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+
+.oc-pill.mine {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.oc-pill.atk {
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 4px 14px;
+}
+
+.oc-timer {
+  width: 100%;
+  max-width: 360px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.oc-timer i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+}
+
+.oc-timer.urgent i {
+  background: var(--danger);
+}
+
+.oc-mine {
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  padding: var(--space-2) var(--space-3) max(var(--space-3), env(safe-area-inset-bottom));
+}
+
+.oc-hand {
+  position: relative;
+  height: 122px;
+}
+
+.oc-hand-card {
+  position: absolute;
+  bottom: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition:
+    bottom 140ms var(--ease-out),
+    opacity 140ms;
+}
+
+.oc-hand-card .oc-card {
+  --w: 52px;
+  box-shadow: 0 1px 3px rgb(29 27 44 / 0.12);
+}
+
+.oc-hand-card.up {
+  bottom: 24px;
+}
+
+.oc-hand-card.up .oc-card {
+  border: 2px solid var(--accent);
+}
+
+.oc-hand-card.dim {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.oc-hand-card:focus-visible {
+  outline: none;
+}
+
+.oc-hand-card:focus-visible .oc-card {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.oc-watch {
+  text-align: center;
+  padding-top: var(--space-5);
+}
+
+.oc-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.oc-actions .btn {
+  min-height: 48px;
+}
+
+.oc-call {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--danger);
+  color: var(--danger-ink);
+  box-shadow: 0 0 0 12px rgb(214 54 75 / 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.oc-call-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.oc-call small {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  padding: 0 14px;
+}
+
+.oc-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  background: rgb(29 27 44 / 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.oc-sheet {
+  width: min(520px, 100%);
+  background: var(--bg);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-4) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: rise 200ms var(--ease-out);
+}
+
+.oc-suits {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.oc-suit {
+  min-height: 56px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.oc-suit.red {
+  color: var(--danger);
+}
+
+.oc-suit:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.oc-ranking {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  text-align: left;
+}
+
+.oc-ranking li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius);
+}
+
+.oc-ranking li.me {
+  background: var(--accent-soft);
+}
+
+.rules-cards {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.rules-cards .ok {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.rules-cards .no {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.rules-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+
+.rules-chip {
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.rules-chip.atk {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.rules-chip.sp {
+  background: var(--accent-soft);
+  color: var(--p1-fg);
+}
+
+.rules-table {
+  width: 100%;
+  margin-top: var(--space-2);
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.rules-table th,
+.rules-table td {
+  padding: 6px 4px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  color: var(--ink-2);
+}
+
+.rules-table th {
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.oc-call[hidden],
+.oc-notice[hidden],
+.oc-actions[hidden],
+.oc-actions .btn[hidden] {
+  display: none;
+}
