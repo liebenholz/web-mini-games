@@ -29,11 +29,11 @@ services:
       redis:
         condition: service_healthy
     networks: [internal, edge]
-    # VM은 6GB(1 OCPU). Postgres, Redis(256MB), Caddy, OS 몫을 남긴다
+    # VM은 12GB(2 OCPU). Postgres, Redis(256MB), Caddy, OS 몫으로 4GB를 남긴다
     deploy:
       resources:
         limits:
-          memory: 3g
+          memory: 8g
 
   postgres:
     image: postgres:17-alpine

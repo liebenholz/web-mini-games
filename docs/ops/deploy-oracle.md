@@ -32,8 +32,9 @@ GitHub Actions ──Tailscale(tailnet)──▶ VM의 SSH(22)   ※ 22번은 �
 
 1. Compute → Instances → Create instance
    - Image: **Canonical Ubuntu 24.04** (aarch64)
-   - Shape: **VM.Standard.A1.Flex**, 1 OCPU / 6 GB (CLAUDE.md 운영 환경. 작은 사양이 자리를 잡기 쉽다. 무료 한도는 계정 전체에 A1 4 OCPU / 24 GB)
-   - 나중에 늘리려면 인스턴스 → Edit → Shape에서 OCPU와 메모리를 바꾼다. 재부팅이 한 번 필요하고, 같은 호스트에 여유가 없으면 거절될 수 있다. 늘리면 `infra/docker-compose.yml`의 서버 메모리 한도도 함께 올린다
+   - Shape: **VM.Standard.A1.Flex**, 운영은 2 OCPU / 12 GB (CLAUDE.md 운영 환경. 무료 한도는 계정 전체에 A1 4 OCPU / 24 GB)
+   - 자리가 없으면 1 OCPU / 6 GB로 먼저 만든다 (작은 사양이 자리를 잡기 쉽다). 만든 뒤 인스턴스 → Edit → Shape에서 2 / 12로 늘린다. 재부팅이 한 번 필요하고, 같은 호스트에 여유가 없으면 거절될 수 있다
+   - 사양을 바꾸면 `infra/docker-compose.yml`의 서버 메모리 한도도 맞춘다 (12 GB에서 8g, 6 GB에서 3g)
    - Networking: 공인 IPv4 할당. 만든 뒤 **예약(Reserved) 공인 IP**로 바꿔 두면 인스턴스를 다시 만들어도 IP가 유지된다
    - SSH 키: 관리용 공개키 등록 (처음 접속과 비상용)
    - 새 VCN과 서브넷을 같이 만들면 그 화면에서는 공인 IPv4 토글을 켤 수 없는 경우가 있다. 그대로 만들고 인스턴스가 생긴 뒤 VNIC → IPv4 Addresses → Edit에서 예약 공인 IP를 붙인다
