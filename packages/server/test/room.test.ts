@@ -415,7 +415,7 @@ describe('BullsRoom 통합 (Phase 2 M4)', () => {
     const room = await colyseus.sdk.create('bulls_and_cows', {
       guestId: newGuest(),
       nickname: '방장',
-      options: { fillWithBots: false, turnSeconds: 15 },
+      options: { fillWithBots: false, turnSeconds: 30 },
     });
     const host = spy(room);
     await waitFor(() => host.playerId !== '');

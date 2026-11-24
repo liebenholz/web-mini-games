@@ -1,4 +1,4 @@
-import { bulls, TURN_SECONDS_CHOICES } from '@wmg/rules';
+import { bulls } from '@wmg/rules';
 import { h, svg } from '../../dom.js';
 import { icons } from '../../icons.js';
 import { invitePath } from '../../routes.js';
@@ -7,7 +7,7 @@ import type { BullsOptionsView, BullsSession, BullsSnapshot } from './session.js
 
 const attemptsLabel = (n: bulls.MaxAttempts) => (n === 0 ? '제한 없음' : String(n));
 
-/** "3자리 · 시도 10번 · 턴 30초" (옵션 요약) */
+/** "3자리 · 시도 10번 · 턴 60초" (옵션 요약) */
 export function optionsSummary(o: BullsOptionsView): string {
   return [
     `${o.digits}자리`,
@@ -97,8 +97,12 @@ export function renderBullsWaiting(
       (v) => setOptions({ maxAttempts: v }),
       attemptsLabel,
     ),
-    segmented('턴 제한(초) · 넘기면 그 턴을 넘겨요', TURN_SECONDS_CHOICES, o.turnSeconds, isHost, (v) =>
-      setOptions({ turnSeconds: v }),
+    segmented(
+      '턴 제한(초) · 넘기면 그 턴을 넘겨요',
+      bulls.BULLS_TURN_SECONDS_CHOICES,
+      o.turnSeconds,
+      isHost,
+      (v) => setOptions({ turnSeconds: v }),
     ),
     toggle('빈자리 봇으로 채우기', o.fillWithBots, isHost, (v) => setOptions({ fillWithBots: v })),
     toggle('비공개 방', o.isPrivate, isHost, (v) => setOptions({ isPrivate: v })),

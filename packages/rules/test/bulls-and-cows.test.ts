@@ -152,26 +152,27 @@ describe('진행과 승부 (B-06~B-09)', () => {
 });
 
 describe('방 옵션 (4장)', () => {
-  it('기본값: 3자리, 10번, 30초, 봇 채우기, 비공개', () => {
+  it('기본값: 3자리, 10번, 60초, 봇 채우기, 비공개', () => {
     expect(bulls.parseBullsOptions(undefined)).toEqual({ ok: true, options: bulls.DEFAULT_BULLS_OPTIONS });
     expect(bulls.DEFAULT_BULLS_OPTIONS).toEqual({
       digits: 3,
       maxAttempts: 10,
-      turnSeconds: 30,
+      turnSeconds: 60,
       fillWithBots: true,
       isPrivate: true,
     });
   });
 
   it('범위 안이면 덮어쓰고, 밖이면 거부한다', () => {
-    expect(bulls.parseBullsOptions({ digits: 4, maxAttempts: 0, turnSeconds: 15 })).toMatchObject({
+    expect(bulls.parseBullsOptions({ digits: 4, maxAttempts: 0, turnSeconds: 90 })).toMatchObject({
       ok: true,
-      options: { digits: 4, maxAttempts: 0, turnSeconds: 15 },
+      options: { digits: 4, maxAttempts: 0, turnSeconds: 90 },
     });
     for (const [input, field] of [
       [{ digits: 5 }, 'digits'],
       [{ maxAttempts: 12 }, 'maxAttempts'],
-      [{ turnSeconds: 90 }, 'turnSeconds'],
+      [{ turnSeconds: 15 }, 'turnSeconds'],
+      [{ turnSeconds: 120 }, 'turnSeconds'],
       [{ isPrivate: 1 }, 'isPrivate'],
       ['x', 'input'],
     ] as const)

@@ -198,14 +198,14 @@ describe('BullsMatch: 추측과 승부 (B-02~B-09)', () => {
 describe('BullsMatch: 시간, 퇴장, 봇 (B-31~B-35)', () => {
   it('BT-09 B-31, B-32: 시간 초과면 턴을 넘기고(시도 1회), 2번 연속이면 봇이 대신 추측한다', () => {
     const { io, scheduler, match, first } = playing();
-    scheduler.advance(30_000);
+    scheduler.advance(60_000);
     expect(io.last('turn_skipped')).toEqual({ playerId: first, attempt: 1 });
     expect(match.state.players.get(first)?.attempts).toBe(1);
-    scheduler.advance(30_000); // 후공도 넘김
-    scheduler.advance(30_000); // 선공 2번째
+    scheduler.advance(60_000); // 후공도 넘김
+    scheduler.advance(60_000); // 선공 2번째
     expect(match.state.players.get(first)?.autopilot).toBe(true);
     // 이후 선공 차례에는 봇이 추측한다
-    scheduler.advance(30_000);
+    scheduler.advance(60_000);
     scheduler.advance(FAST_TIMING.botDelayMaxMs);
     expect(
       io.sent.some((s) => s.type === 'guess_result' && s.payload.playerId === first && s.payload.isAuto),

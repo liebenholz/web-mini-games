@@ -44,7 +44,7 @@ export const BullsOptionsState = schema(
   {
     digits: t.uint8().default(3),
     maxAttempts: t.uint8().default(10),
-    turnSeconds: t.uint8().default(30),
+    turnSeconds: t.uint8().default(60),
     fillWithBots: t.boolean().default(true),
     isPrivate: t.boolean().default(true),
   },

@@ -47,8 +47,24 @@ export function formatScore(s: Score, digits: Digits): string {
   return [s.strikes > 0 ? `${s.strikes}S` : '', s.balls > 0 ? `${s.balls}B` : ''].filter(Boolean).join(' ');
 }
 
-/** 가능한 모든 숫자 (3자리 720개, 4자리 5040개) */
+const numberCache = new Map<Digits, readonly string[]>();
+
+/** 가능한 모든 숫자 (3자리 720개, 4자리 5040개). 봇이 추측할 때마다 쓰므로 한 번만 만들어 둔다 */
+function numbersOf(digits: Digits): readonly string[] {
+  let list = numberCache.get(digits);
+  if (!list) {
+    list = Object.freeze(buildNumbers(digits));
+    numberCache.set(digits, list);
+  }
+  return list;
+}
+
+/** 가능한 모든 숫자 (3자리 720개, 4자리 5040개). 호출한 쪽이 바꿔도 되도록 복사본을 준다 */
 export function allNumbers(digits: Digits): string[] {
+  return [...numbersOf(digits)];
+}
+
+function buildNumbers(digits: Digits): string[] {
   const out: string[] = [];
   const walk = (prefix: string) => {
     if (prefix.length === digits) {
@@ -181,7 +197,7 @@ export function skipTurn(s: BullsState, seat: 0 | 1): BullsResult {
  */
 export function botGuess(digits: Digits, own: readonly GuessRecord[], pick: Pick): string {
   const known = own.filter((r): r is GuessRecord & { guess: string } => r.guess !== null);
-  const candidates = allNumbers(digits).filter((n) =>
+  const candidates = numbersOf(digits).filter((n) =>
     known.every((r) => {
       const sc = score(n, r.guess);
       return sc.strikes === r.strikes && sc.balls === r.balls;

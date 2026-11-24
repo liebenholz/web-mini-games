@@ -2,7 +2,6 @@
  * 숫자야구 방 옵션과 메시지 타입 (docs/specs/bulls-and-cows.md 4장, 6장).
  * 공통 대기실 메시지는 다른 게임과 같은 이름과 형태를 쓴다.
  */
-import { TURN_SECONDS_CHOICES, type TurnSeconds } from '../../room.js';
 import { DIGIT_CHOICES, type Digits } from './game.js';
 
 /** 서버 방 종류 (ADR 0002). 주소는 bulls-and-cows */
@@ -13,11 +12,14 @@ export const SECRET_MS = 60_000;
 /** B-08: 0은 제한 없음 */
 export const MAX_ATTEMPT_CHOICES = [10, 15, 0] as const;
 export type MaxAttempts = (typeof MAX_ATTEMPT_CHOICES)[number];
+/** B-31: 한 번 추측할 시간. 숫자를 따져 볼 시간이 필요해 다른 게임(15/30/60)보다 길다 */
+export const BULLS_TURN_SECONDS_CHOICES = [30, 60, 90] as const;
+export type BullsTurnSeconds = (typeof BULLS_TURN_SECONDS_CHOICES)[number];
 
 export interface BullsRoomOptions {
   readonly digits: Digits;
   readonly maxAttempts: MaxAttempts;
-  readonly turnSeconds: TurnSeconds;
+  readonly turnSeconds: BullsTurnSeconds;
   readonly fillWithBots: boolean;
   readonly isPrivate: boolean;
 }
@@ -25,7 +27,7 @@ export interface BullsRoomOptions {
 export const DEFAULT_BULLS_OPTIONS: BullsRoomOptions = Object.freeze({
   digits: 3,
   maxAttempts: 10,
-  turnSeconds: 30,
+  turnSeconds: 60,
   fillWithBots: true,
   isPrivate: true,
 });
@@ -65,9 +67,9 @@ export function parseBullsOptions(
     next.maxAttempts = raw.maxAttempts as MaxAttempts;
   }
   if ('turnSeconds' in raw) {
-    if (!TURN_SECONDS_CHOICES.some((c) => c === raw.turnSeconds))
+    if (!BULLS_TURN_SECONDS_CHOICES.some((c) => c === raw.turnSeconds))
       return { ok: false, code: 'INVALID_OPTIONS', field: 'turnSeconds' };
-    next.turnSeconds = raw.turnSeconds as TurnSeconds;
+    next.turnSeconds = raw.turnSeconds as BullsTurnSeconds;
   }
   return { ok: true, options: Object.freeze(next) };
 }
