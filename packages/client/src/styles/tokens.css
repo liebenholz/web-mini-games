@@ -4,7 +4,8 @@
  * 대비: ink/ink-2/ink-3, accent, danger, success 모두 흰 바탕에서 4.5:1 이상.
  */
 :root {
-  color-scheme: light;
+  /* only: 브라우저 강제 다크 모드가 색을 뒤집지 않게 (오목 흑돌이 하얗게 보이던 문제) */
+  color-scheme: only light;
 
   --bg: #ffffff;
   --surface: #f7f6fc;
