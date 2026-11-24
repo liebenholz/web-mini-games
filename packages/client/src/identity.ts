@@ -3,13 +3,29 @@
  * 브라우저에 무작위 게스트 ID와 닉네임을 저장한다. 게스트 ID는 서버에만 보내고 다른 사람에게는 공개되지 않는다.
  */
 const GUEST_KEY = 'wmg.guestId';
-const NICK_KEY = 'wmg.nickname';
+/** Phase 1의 닉네임 키. 게임이 하나였을 때 쓰던 값이라 거짓말쟁이 주사위 닉네임으로 옮긴다 (ADR 0002) */
+const LEGACY_NICK_KEY = 'wmg.nickname';
+/** Phase 1부터 있던 게임. 기존 /r/<코드> 초대 링크와 저장된 닉네임이 이 게임으로 이어진다 */
+export const LEGACY_GAME_ID = 'liars-dice';
+
+/** 닉네임은 게임마다 따로 저장한다. 게스트 ID는 모든 게임이 하나를 같이 쓴다 */
+export function nicknameKey(gameId: string): string {
+  return `wmg.${gameId}.nickname`;
+}
 
 function safeGet(key: string): string | null {
   try {
     return localStorage.getItem(key);
   } catch {
     return null;
+  }
+}
+
+function safeRemove(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // 저장소를 쓸 수 없으면 지울 것도 없다
   }
 }
 
@@ -50,10 +66,20 @@ export function guestId(): string {
   return id;
 }
 
-export function savedNickname(): string {
-  return safeGet(NICK_KEY) ?? '';
+export function savedNickname(gameId: string): string {
+  const own = safeGet(nicknameKey(gameId));
+  if (own !== null) return own;
+  if (gameId === LEGACY_GAME_ID) {
+    const legacy = safeGet(LEGACY_NICK_KEY);
+    if (legacy !== null) {
+      safeSet(nicknameKey(gameId), legacy);
+      safeRemove(LEGACY_NICK_KEY);
+      return legacy;
+    }
+  }
+  return '';
 }
 
-export function saveNickname(name: string): void {
-  safeSet(NICK_KEY, name);
+export function saveNickname(gameId: string, name: string): void {
+  safeSet(nicknameKey(gameId), name);
 }

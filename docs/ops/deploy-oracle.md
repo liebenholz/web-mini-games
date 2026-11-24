@@ -193,18 +193,19 @@ gh secret set DEPLOY_SSH_KEY --repo <owner>/web-mini-games < ~/.ssh/wmg_deploy
 ssh-keyscan -t ed25519 wmg-server 2>/dev/null | gh secret set DEPLOY_SSH_KNOWN_HOSTS --repo <owner>/web-mini-games
 ```
 
-| 종류     | 이름                     | 값                                                                     |
-| -------- | ------------------------ | ---------------------------------------------------------------------- |
-| Secret   | `TS_OAUTH_CLIENT_ID`     | 5-3단계 Client ID                                                      |
-| Secret   | `TS_OAUTH_SECRET`        | 5-3단계 Secret                                                         |
-| Secret   | `DEPLOY_SSH_HOST`        | `wmg-server` (VM의 tailnet 이름)                                       |
-| Secret   | `DEPLOY_SSH_USER`        | `deploy`                                                               |
-| Secret   | `DEPLOY_SSH_KEY`         | `wmg_deploy` 개인키 전체                                               |
-| Secret   | `DEPLOY_SSH_KNOWN_HOSTS` | tailnet에 접속한 노트북에서 `ssh-keyscan -t ed25519 wmg-server`의 출력 |
-| Secret   | `CLOUDFLARE_API_TOKEN`   | 9단계 토큰                                                             |
-| Secret   | `CLOUDFLARE_ACCOUNT_ID`  | Cloudflare 계정 ID                                                     |
-| Variable | `CF_PAGES_PROJECT`       | `wmg-play`                                                             |
-| Variable | `VITE_SERVER_URL`        | `wss://api.<도메인>`                                                   |
+| 종류     | 이름                     | 값                                                                                                                |
+| -------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Secret   | `TS_OAUTH_CLIENT_ID`     | 5-3단계 Client ID                                                                                                 |
+| Secret   | `TS_OAUTH_SECRET`        | 5-3단계 Secret                                                                                                    |
+| Secret   | `DEPLOY_SSH_HOST`        | `wmg-server` (VM의 tailnet 이름)                                                                                  |
+| Secret   | `DEPLOY_SSH_USER`        | `deploy`                                                                                                          |
+| Secret   | `DEPLOY_SSH_KEY`         | `wmg_deploy` 개인키 전체                                                                                          |
+| Secret   | `DEPLOY_SSH_KNOWN_HOSTS` | tailnet에 접속한 노트북에서 `ssh-keyscan -t ed25519 wmg-server`의 출력                                            |
+| Secret   | `CLOUDFLARE_API_TOKEN`   | 9단계 토큰                                                                                                        |
+| Secret   | `CLOUDFLARE_ACCOUNT_ID`  | Cloudflare 계정 ID                                                                                                |
+| Variable | `CF_PAGES_PROJECT`       | `wmg-play`                                                                                                        |
+| Variable | `VITE_SERVER_URL`        | `wss://api.<도메인>`                                                                                              |
+| Variable | `SITE_URL` (선택)        | 도메인을 연결하면 `https://play.<도메인>`. 없으면 `https://<CF_PAGES_PROJECT>.pages.dev`로 링크 미리보기를 만든다 |
 
 `CF_PAGES_PROJECT`를 등록하는 순간부터 `main` 머지 때 클라이언트가 배포된다 (등록 전에는 배포 작업을 건너뛴다). 변수를 바꾼 뒤 바로 다시 배포하려면 Actions → deploy-client → **Run workflow**(main)를 누른다.
 

@@ -1,11 +1,14 @@
-import { MAX_PLAYERS, MIN_PLAYERS, TURN_SECONDS_CHOICES, type RoomOptions } from '@wmg/rules';
+import { GAME_ID, MAX_PLAYERS, MIN_PLAYERS, TURN_SECONDS_CHOICES, type RoomOptions } from '@wmg/rules';
 import { h, svg, toast } from '../dom.js';
 import { icons } from '../icons.js';
 import type { PlayerView, Session, SessionSnapshot } from '../net.js';
+import { gameByRoomType } from '../games/registry.js';
+import { invitePath } from '../routes.js';
 import { avatar } from './avatar.js';
 
 function inviteUrl(code: string): string {
-  return `${location.origin}/r/${code}`;
+  const game = gameByRoomType(GAME_ID);
+  return `${location.origin}${game ? invitePath(game, code) : `/r/${code}`}`;
 }
 
 async function copy(text: string, done: string): Promise<void> {

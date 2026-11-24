@@ -176,6 +176,11 @@ export class Session {
   static async join(code: string, nickname: string): Promise<Session> {
     try {
       const room = await sdk().joinById(code, { guestId: guestId(), nickname });
+      // 방 코드는 모든 게임이 같은 공간을 쓴다. 초대 링크의 게임과 다른 방이면 들어가지 않는다 (ADR 0002)
+      if (room.name !== GAME_ID) {
+        void room.leave(true).catch(() => undefined);
+        throw new JoinError('ROOM_NOT_FOUND');
+      }
       return await new Session(room).#ready();
     } catch (error) {
       throw error instanceof JoinError ? error : toJoinError(error);

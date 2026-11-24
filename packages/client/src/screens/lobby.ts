@@ -1,6 +1,7 @@
 import { NICKNAME_MAX, normalizeNickname, normalizeRoomCode } from '@wmg/rules';
 import { h, svg } from '../dom.js';
-import { dieSvg } from '../icons.js';
+import type { GameInfo } from '../games/registry.js';
+import { dieSvg, icons } from '../icons.js';
 import { describeError, JoinError, type Session } from '../net.js';
 import { saveNickname, savedNickname } from '../identity.js';
 import { rulesButton } from './rulesSheet.js';
@@ -10,10 +11,13 @@ export interface LobbyActions {
   join(code: string, nickname: string): Promise<Session>;
   quickMatch(nickname: string): Promise<Session>;
   entered(session: Session): void;
+  /** 메인(게임 목록)으로 */
+  back(): void;
 }
 
-/** 로비: 닉네임, 방 만들기, 코드로 입장, 랜덤 매칭 (명세 8장) */
+/** 게임 로비: 닉네임(이 게임에서만 쓴다), 방 만들기, 코드로 입장, 랜덤 매칭 (명세 8장, ADR 0002) */
 export function renderLobby(
+  game: GameInfo,
   actions: LobbyActions,
   inviteCode: string | null = null,
   notice: string | null = null,
@@ -25,7 +29,7 @@ export function renderLobby(
     autocomplete: 'nickname',
     maxlength: NICKNAME_MAX,
     placeholder: '2~12자',
-    value: savedNickname(),
+    value: savedNickname(game.id),
     required: true,
   });
   const codeInput = h('input', {
@@ -55,7 +59,7 @@ export function renderLobby(
       nickInput.focus();
       return;
     }
-    saveNickname(nickname);
+    saveNickname(game.id, nickname);
     error.textContent = '';
     busy(true);
     try {
@@ -101,23 +105,38 @@ export function renderLobby(
     dice.append(h('span', { class: `pip-die tone-${i + 1}` }, svg(dieSvg(f))));
   });
 
+  const back = h(
+    'button',
+    { class: 'btn btn-ghost back-link', type: 'button' },
+    svg(icons.back),
+    '게임 목록',
+  );
+  back.addEventListener('click', () => actions.back());
+
   const page = h(
     'main',
     { class: 'page narrow' },
+    h('nav', { class: 'lobby-nav', 'aria-label': '이동' }, back),
     h(
       'header',
       { class: 'lobby-hero' },
       dice,
-      h('h1', {}, '거짓말쟁이 주사위'),
-      h(
-        'p',
-        { class: 'muted' },
-        '내 주사위만 보고, 판 위에 몇 개가 있는지 부르세요. 거짓말 같으면 "라이어!"',
-      ),
+      h('h1', {}, game.name),
+      h('p', { class: 'muted' }, game.lead),
       // 처음 온 사람이 닉네임을 넣기 전에 규칙을 볼 수 있게 소개 바로 아래에 둔다
-      h('div', {}, rulesButton()),
+      game.rules ? h('div', {}, rulesButton(game.rules)) : null,
     ),
-    h('div', { class: 'field' }, h('label', { for: 'nickname' }, '닉네임'), nickInput),
+    h(
+      'div',
+      { class: 'field' },
+      h(
+        'label',
+        { for: 'nickname', class: 'field-label' },
+        '닉네임',
+        h('span', { class: 'hint' }, '이 게임에서만 써요'),
+      ),
+      nickInput,
+    ),
     inviteCode
       ? h('div', { class: 'stack' }, h('p', { class: 'muted' }, `초대받은 방 ${inviteCode}`), joinForm)
       : h(
@@ -131,6 +150,6 @@ export function renderLobby(
     error,
     h('p', { class: 'hint' }, '가입 없이 이 브라우저에 닉네임만 저장합니다. 빈자리는 봇이 채웁니다.'),
   );
-  queueMicrotask(() => (inviteCode && savedNickname() ? joinBtn : nickInput).focus());
+  queueMicrotask(() => (inviteCode && savedNickname(game.id) ? joinBtn : nickInput).focus());
   return page;
 }

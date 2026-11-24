@@ -15,15 +15,18 @@ async function expectAllButtonsOnScreen(page: Page) {
   }
 }
 
-test('M4: 사람 1명 + 봇 2명으로 한 판 완주 (360px)', async ({ page }) => {
+test('M4·Phase 2 M1: 메인에서 게임을 골라 사람 1명 + 봇 2명으로 한 판 완주 (360px)', async ({ page }) => {
   await page.goto('/');
+  await expectAllButtonsOnScreen(page);
+  await page.getByRole('button', { name: '거짓말쟁이 주사위 하러 가기' }).click();
+  await expect(page).toHaveURL(/\/liars-dice$/);
   await expectAllButtonsOnScreen(page);
   await setNickname(page, '테스터');
   await page.getByRole('button', { name: '방 만들기' }).click();
 
   const code = page.getByTestId('room-code');
   await expect(code).toHaveText(/^[A-HJ-NP-Z2-9]{6}$/);
-  await expect(page).toHaveURL(new RegExp(`/r/${await code.innerText()}$`));
+  await expect(page).toHaveURL(new RegExp(`/liars-dice/r/${await code.innerText()}$`));
 
   // 방 옵션: 최대 3명(빈자리 봇 2명), 시작 주사위 3개
   await page.getByRole('group', { name: '최대 인원' }).getByRole('button', { name: '3' }).click();
@@ -82,8 +85,11 @@ test('M4: 사람 1명 + 봇 2명으로 한 판 완주 (360px)', async ({ page })
   await expect(page.getByTestId('room-code')).toBeVisible();
 });
 
-test('M4: 초대 링크 /r/:code로 바로 대기실에 들어간다', async ({ page, browser }) => {
-  await page.goto('/');
+test('M4: 이전 초대 링크 /r/:code와 저장된 Phase 1 닉네임으로 바로 대기실에 들어간다', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/liars-dice');
   await setNickname(page, '방장');
   await page.getByRole('button', { name: '방 만들기' }).click();
   const code = await page.getByTestId('room-code').innerText();
@@ -97,7 +103,7 @@ test('M4: 초대 링크 /r/:code로 바로 대기실에 들어간다', async ({ 
   await friend.close();
 });
 
-for (const path of ['/', '/r/ABC234']) {
+for (const path of ['/liars-dice', '/liars-dice/r/ABC234', '/r/ABC234']) {
   test(`로비: 게임 규칙 시트를 열고 위아래로 읽은 뒤 닫는다 (${path})`, async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
     await page.goto(path);
@@ -127,11 +133,62 @@ for (const path of ['/', '/r/ABC234']) {
   });
 }
 
+test('Phase 2 M1: 메인은 게임만 고르고, 준비 중인 게임은 누를 수 없다', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle('WMG · Web Multiplayer Ground');
+  await expect(page.getByRole('heading', { name: 'Web Multiplayer Ground' })).toBeVisible();
+  await expect(page.getByText('링크 하나로 친구와 바로 하는 미니게임.')).toBeVisible();
+  // 닉네임과 방 코드는 게임 로비에서 정한다
+  await expect(page.locator('#nickname')).toHaveCount(0);
+  await expect(page.locator('#room-code')).toHaveCount(0);
+
+  const dice = page.getByTestId('game-liars-dice');
+  await expect(dice).toContainText('내 주사위를 단서로 거짓말을 잡아내요');
+  for (const id of ['omok', 'one-card']) {
+    const card = page.getByTestId(`game-${id}`);
+    await expect(card).toContainText('준비 중');
+    await expect(card.getByRole('button')).toHaveCount(0);
+  }
+  await expectAllButtonsOnScreen(page);
+
+  // 메인 카드에서도 규칙을 볼 수 있다
+  await dice.getByRole('button', { name: '거짓말쟁이 주사위 규칙 보기' }).click();
+  await expect(page.getByRole('dialog', { name: '거짓말쟁이 주사위 규칙' })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // 로비 → 게임 목록으로 돌아오기
+  await dice.getByRole('button', { name: '거짓말쟁이 주사위 하러 가기' }).click();
+  await expect(page.getByRole('heading', { name: '거짓말쟁이 주사위' })).toBeVisible();
+  await expect(page.getByText('이 게임에서만 써요')).toBeVisible();
+  await page.getByRole('button', { name: '게임 목록' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByTestId('game-liars-dice')).toBeVisible();
+});
+
+test('Phase 2 M1: 준비 중인 게임 주소는 메인으로 보낸다', async ({ page }) => {
+  await page.goto('/omok');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#toast')).toContainText('준비 중인 게임입니다');
+});
+
+test('Phase 2 M1: 닉네임은 게임별로 저장된다', async ({ page }) => {
+  await page.goto('/liars-dice');
+  await setNickname(page, '주사위전용');
+  await page.getByRole('button', { name: '방 만들기' }).click();
+  await expect(page.getByTestId('room-code')).toBeVisible();
+  const stored = await page.evaluate(() => ({
+    dice: localStorage.getItem('wmg.liars-dice.nickname'),
+    omok: localStorage.getItem('wmg.omok.nickname'),
+    legacy: localStorage.getItem('wmg.nickname'),
+  }));
+  expect(stored).toEqual({ dice: '주사위전용', omok: null, legacy: null });
+});
+
 test.describe('고해상도 화면 (DPR 2)', () => {
   test.use({ viewport: { width: 360, height: 740 }, deviceScaleFactor: 2 });
 
   test('게임 테이블 캔버스를 실제 픽셀 수로 그린다 (흐릿하지 않게)', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/liars-dice');
     await setNickname(page, '선명도');
     await page.getByRole('button', { name: '방 만들기' }).click();
     await page.getByRole('group', { name: '최대 인원' }).getByRole('button', { name: '3' }).click();
@@ -154,7 +211,7 @@ for (const viewport of [
 ]) {
   test(`대기실: 글자가 잘리거나 하단 바에 가려지지 않는다 (${viewport.width}px)`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await page.goto('/');
+    await page.goto('/liars-dice');
     await setNickname(page, '열두글자닉네임테스트용');
     await page.getByRole('button', { name: '방 만들기' }).click();
     await expect(page.getByTestId('room-code')).toBeVisible();

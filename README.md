@@ -1,6 +1,6 @@
 # web-mini-games
 
-브라우저에서 링크 하나로 바로 플레이하는 턴제·방 기반 웹 미니게임 플랫폼. 첫 게임은 **거짓말쟁이 주사위**(2~6인, 봇 포함)다.
+**WMG (Web Multiplayer Ground)**: 브라우저에서 링크 하나로 바로 플레이하는 턴제·방 기반 웹 미니게임 플랫폼. 첫 게임은 **거짓말쟁이 주사위**(2~6인, 봇 포함)이고, 오목과 원카드를 준비 중이다 ([Phase 2 계획](docs/plan/phase2.md)).
 
 - 명세: [docs/specs/liars-dice.md](docs/specs/liars-dice.md)
 - 작업 계획: [docs/plan/phase1.md](docs/plan/phase1.md), 영역별 분해: [docs/plan/phase1-tasks.md](docs/plan/phase1-tasks.md)
@@ -28,7 +28,7 @@ pnpm --filter server dev     # ws://localhost:2567
 pnpm --filter client dev     # http://localhost:5173
 ```
 
-브라우저 두 개(또는 시크릿 창)로 `http://localhost:5173`에 들어가 한쪽에서 방을 만들고, 초대 링크(`/r/코드`)로 다른 쪽이 들어온다. 혼자서도 "시작"을 누르면 빈자리를 봇이 채운다.
+브라우저 두 개(또는 시크릿 창)로 `http://localhost:5173`에 들어가 게임을 고르고, 한쪽에서 방을 만들고, 초대 링크(`/liars-dice/r/코드`)로 다른 쪽이 들어온다. 주소 체계는 [ADR 0002](docs/adr/0002-multi-game-platform.md)를 따른다. 혼자서도 "시작"을 누르면 빈자리를 봇이 채운다.
 
 개발 중 판을 빨리 돌려 보려면 시간 배율을 줄인다 (운영에서는 거부된다):
 
