@@ -122,17 +122,22 @@ export function seatItem(
   const remove = canRemove
     ? h(
         'button',
-        { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': `${p.nickname} 빼기` },
+        { class: 'btn btn-seat-x btn-remove-bot', type: 'button', 'aria-label': `${p.nickname} 빼기` },
         svg(icons.close),
       )
     : null;
   remove?.addEventListener('click', onRemove);
-  // 방장만, 사람 참가자에게: 상태 배지 오른쪽 빨간 추방 버튼 (E-15)
+  // 방장만, 사람 참가자에게: 상태 배지 오른쪽 빨간 X 추방 버튼 (E-15). 봇 빼기는 같은 자리의 회색 X
   const kick = onKick
     ? h(
         'button',
-        { class: 'btn btn-kick', type: 'button', 'aria-label': `${p.nickname} 추방`, 'data-testid': 'kick' },
-        svg(icons.userX),
+        {
+          class: 'btn btn-seat-x btn-kick',
+          type: 'button',
+          'aria-label': `${p.nickname} 추방`,
+          'data-testid': 'kick',
+        },
+        svg(icons.close),
       )
     : null;
   if (kick && onKick) kick.addEventListener('click', () => onKick(kick));
