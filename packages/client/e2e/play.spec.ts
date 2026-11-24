@@ -90,6 +90,27 @@ test('M4: 초대 링크 /r/:code로 바로 대기실에 들어간다', async ({ 
   await friend.close();
 });
 
+test.describe('고해상도 화면 (DPR 2)', () => {
+  test.use({ viewport: { width: 360, height: 740 }, deviceScaleFactor: 2 });
+
+  test('게임 테이블 캔버스를 실제 픽셀 수로 그린다 (흐릿하지 않게)', async ({ page }) => {
+    await page.goto('/');
+    await setNickname(page, '선명도');
+    await page.getByRole('button', { name: '방 만들기' }).click();
+    await page.getByRole('group', { name: '최대 인원' }).getByRole('button', { name: '3' }).click();
+    await page.getByRole('button', { name: '시작' }).click();
+
+    const canvas = page.locator('canvas');
+    await expect(canvas).toBeVisible();
+    // 캔버스 픽셀 크기 = CSS 크기 × 2. 같으면 1배로 그린 것을 늘려 보여 주는 것이라 흐릿하다
+    await expect
+      .poll(() =>
+        canvas.evaluate((c: HTMLCanvasElement) => [c.width / c.clientWidth, c.height / c.clientHeight]),
+      )
+      .toEqual([2, 2]);
+  });
+});
+
 for (const viewport of [
   { width: 360, height: 640 },
   { width: 1280, height: 720 },
