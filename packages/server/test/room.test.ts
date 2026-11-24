@@ -385,3 +385,27 @@ describe('GomokuRoom 통합 (Phase 2 M2)', () => {
     );
   });
 });
+
+describe('OneCardRoom 통합 (Phase 2 M3)', () => {
+  it('두 사람 + 봇 2명으로 시작하면 각자 자기 패 7장만 받고, 공유 상태에는 패가 없다 (C-40)', async () => {
+    const room = await colyseus.sdk.create('one_card', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { maxPlayers: 4, turnSeconds: 15 },
+    });
+    const host = spy(room);
+    await waitFor(() => host.playerId !== '');
+    const guest = await joinRoom(host.room.roomId, newGuest(), '손님');
+    expect(host.room.name).toBe('one_card');
+    guest.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    await waitFor(() => has(host, 'your_hand') && has(guest, 'your_hand'), 10_000);
+    const handOf = (s: Spy) => s.messages.find((m) => m.type === 'your_hand')!.payload.cards as string[];
+    expect(handOf(host)).toHaveLength(7);
+    expect(handOf(guest)).toHaveLength(7);
+    expect(handOf(host).some((c) => handOf(guest).includes(c))).toBe(false);
+    const state = JSON.stringify((host.room.state as { toJSON(): unknown }).toJSON());
+    for (const card of handOf(guest)) expect(state).not.toContain(`"${card}"`);
+  });
+});
