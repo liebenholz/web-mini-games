@@ -66,6 +66,8 @@ test('M3: 사람 1명 + 봇 3명으로 한 판을 끝까지 하고 순위를 본
   }
   await expect(result.locator('.oc-ranking li')).toHaveCount(4, { timeout: 120_000 });
   await expect(result).toContainText('다시 하기');
+  // 끝난 뒤에는 지난 알림("○○ 님 원카드!")이 결과 화면 위에 남지 않는다
+  await expect(page.locator('.oc-notice')).toBeHidden();
 });
 
 test('360px: 패가 많아도 카드마다 누를 수 있는 자리가 남는다', async ({ page }) => {

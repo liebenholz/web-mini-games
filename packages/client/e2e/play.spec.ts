@@ -51,6 +51,15 @@ test('M4·Phase 2 M1: 메인에서 게임을 골라 사람 1명 + 봇 2명으로
   const roomCode = page.url().split('/').at(-1)!;
   await expect(page.locator('.statusbar')).not.toContainText(roomCode);
   await expect(page.locator('.statusbar').getByRole('button', { name: '나가기' })).toBeVisible();
+  // 360px에서도 눈 버튼은 누르기 쉬운 크기(44px 이상)다
+  for (const box of await page
+    .locator('.face')
+    .evaluateAll((els) =>
+      els.map((e) => e.getBoundingClientRect().toJSON() as { width: number; height: number }),
+    )) {
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
 
   // E2E는 시간 배율 때문에 공개가 150ms 정도로 짧다. 기다리기 시작하기 전에 지나가 버릴 수 있으므로
   // 게임 내내 판정 요약과 직전 판정 버튼이 나타났는지 기록해 두고 끝에서 확인한다
