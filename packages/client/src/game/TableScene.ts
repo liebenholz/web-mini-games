@@ -440,13 +440,18 @@ export class TableScene extends Phaser.Scene {
     const qty = this.#text(cx - size * 0.6, cy + 8, String(last.quantity), compact ? 40 : 50, p.css.ink, 800);
     this.#text(qty.x + qty.width / 2 + 10, cy + 10, '×', compact ? 16 : 20, p.css.ink3, 600);
     this.#die(qty.x + qty.width / 2 + 24 + size / 2, cy + 8, size, last.face as DieFace, false);
-    // 선언 기록 (최근 5개)
-    const trail = m.bids
-      .slice(-6, -1)
-      .map((b) => `${b.quantity}×${b.face}`)
-      .join('  ·  ');
-    if (trail)
-      this.#text(cx, cy + cardH / 2 + 18, trail, compact ? 12 : 13, p.css.ink3, 600, this.#view.width - 32);
+    // 선언 기록 (최근 5개). 좁은 화면에서는 양옆 좌석(1번, 5번)의 주사위 칸과 겹치지 않게
+    // 선언 카드 폭 안에 들어갈 만큼만 남기고 오래된 것부터 뺀다
+    const previous = m.bids.slice(-6, -1).map((b) => `${b.quantity}×${b.face}`);
+    const maxTrail = compact ? cardW + 16 : this.#view.width - 32;
+    const trailY = cy + cardH / 2 + 18;
+    const trailSize = compact ? 12 : 13;
+    while (previous.length > 0) {
+      const t = this.#text(cx, trailY, previous.join('  ·  '), trailSize, p.css.ink3, 600);
+      if (t.width <= maxTrail || previous.length === 1) break;
+      t.destroy();
+      previous.shift();
+    }
   }
 
   #drawMine(W: number, H: number, m: TableModel, compact: boolean, animate: boolean): void {

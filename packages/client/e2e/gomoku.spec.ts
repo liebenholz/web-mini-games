@@ -108,3 +108,13 @@ test('G-12: 시간 안에 두지 않으면 시간패, 다시 하기로 대기실
   await result.getByRole('button', { name: '다시 하기' }).click();
   await expect(page.getByTestId('room-code')).toBeVisible();
 });
+
+test('PC: 결과 카드는 오른쪽 칸에 나와 판을 가리지 않는다', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await startVsBot(page, '15');
+  const result = page.getByTestId('result');
+  await expect(result).toContainText('졌어요', { timeout: 30_000 });
+  const board = (await page.getByTestId('gomoku-board').boundingBox())!;
+  const card = (await result.boundingBox())!;
+  expect(card.x).toBeGreaterThanOrEqual(board.x + board.width);
+});

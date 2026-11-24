@@ -285,7 +285,9 @@ export function mountOneCardGame(root: HTMLElement, session: OneCardSession, onE
     const cards = [...snap.hand];
     const width = Math.max(240, hand.clientWidth || 328);
     const n = cards.length;
-    const step = n > 1 ? Math.min(34, (width - CARD_W) / (n - 1)) : 0;
+    // 폰 폭에서는 카드가 34px씩 보이게 겹친다. 넓은 화면(데스크톱)에서는 자리가 남으므로 거의 다 보이게 펼친다
+    const maxStep = width >= 480 ? CARD_W - 6 : 34;
+    const step = n > 1 ? Math.min(maxStep, (width - CARD_W) / (n - 1)) : 0;
     const used = CARD_W + step * Math.max(0, n - 1);
     const start = (width - used) / 2;
     const fan = n <= 9;
@@ -356,7 +358,10 @@ export function mountOneCardGame(root: HTMLElement, session: OneCardSession, onE
     const c = snap.call;
     const n = snap.notice;
     const name = (id: string | null) => v.players.find((p) => p.id === id)?.nickname ?? '';
-    if (c && Date.now() - c.at < CALL_NOTICE_MS) {
+    // 판이 끝나면 결과 화면 위에 지난 알림("○○ 님 원카드!")을 남기지 않는다
+    if (v.phase === 'GAME_OVER') {
+      // 알림 없음
+    } else if (c && Date.now() - c.at < CALL_NOTICE_MS) {
       if (c.result === 'penalty') {
         text =
           c.playerId === snap.me

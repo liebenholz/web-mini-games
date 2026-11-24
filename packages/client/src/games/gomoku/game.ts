@@ -100,9 +100,10 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
   });
 
   const result = h('div', { class: 'gomoku-result', hidden: true, 'data-testid': 'result' });
-  const side = h('aside', { class: 'gomoku-side' }, players, help);
+  // 결과 카드는 폰에서는 화면 아래에 떠 있고, PC에서는 오른쪽 칸에 들어가 판을 가리지 않는다
+  const side = h('aside', { class: 'gomoku-side' }, players, help, result);
   const main = h('div', { class: 'gomoku-main' }, h('div', { class: 'board-wrap' }, board), side);
-  const shell = h('div', { class: 'gomoku' }, statusbar, notice, main, confirmBar, result);
+  const shell = h('div', { class: 'gomoku' }, statusbar, notice, main, confirmBar);
   root.replaceChildren(shell);
 
   function me(): GomokuPlayerView | undefined {
