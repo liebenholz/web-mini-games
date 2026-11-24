@@ -9,14 +9,13 @@ import {
   type ServerMessages,
 } from '@wmg/rules';
 import { RateLimiter } from '../../framework/rateLimiter.js';
-import { generateRoomCode } from '../../framework/roomCode.js';
+import { generateRoomCode, ROOM_CODES_KEY } from '../../framework/roomCode.js';
 import { TimerScheduler } from '../../framework/scheduler.js';
 import type { GameRecord } from '../../persistence/types.js';
 import { LiarsDiceMatch, SPECTATOR_LIMIT, type MatchIO } from './LiarsDiceMatch.js';
 import { activeRooms, runtime } from './runtime.js';
 import type { LiarsDiceState } from './state.js';
 
-const ROOM_CODES_KEY = 'wmg:liars_dice:codes';
 const CLIENT_MESSAGES: readonly ClientMessageType[] = [
   'set_ready',
   'start_game',

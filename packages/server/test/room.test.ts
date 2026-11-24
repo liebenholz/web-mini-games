@@ -297,3 +297,76 @@ describe('LiarsDiceRoom 통합 (M2)', () => {
     expect(recorder.records).toHaveLength(20);
   });
 });
+
+describe('GomokuRoom 통합 (Phase 2 M2)', () => {
+  async function createGomoku(extra: Record<string, unknown> = {}) {
+    const room = await colyseus.sdk.create('gomoku', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { fillWithBots: false, turnSeconds: 15, ...extra },
+    });
+    const s = spy(room);
+    await waitFor(() => s.playerId !== '');
+    return s;
+  }
+
+  it('방 코드는 거짓말쟁이 주사위 방과 같은 형식이고 겹치지 않는다', async () => {
+    const dice = await createRoom();
+    const board = await createGomoku();
+    expect(board.room.roomId).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
+    expect(board.room.roomId).not.toBe(dice.room.roomId);
+    expect(board.room.name).toBe('gomoku');
+  });
+
+  it('두 사람이 들어와 시작하고, 착수가 판에 반영되며, 다섯을 이으면 끝난다', async () => {
+    const host = await createGomoku({ blackPolicy: 'host' });
+    const guestSpy = await joinRoom(host.room.roomId, newGuest(), '손님');
+    guestSpy.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as {
+      phase: string;
+      turnId: string;
+      currentTurn: string;
+      board: number[];
+      result: string;
+    };
+    await waitFor(() => state.phase === 'PLAYING');
+    expect(state.currentTurn).toBe(host.playerId);
+
+    const moves: Array<[Spy, number, number]> = [
+      [host, 3, 7],
+      [guestSpy, 3, 0],
+      [host, 4, 7],
+      [guestSpy, 4, 0],
+      [host, 5, 7],
+      [guestSpy, 5, 0],
+      [host, 6, 7],
+      [guestSpy, 6, 0],
+      [host, 7, 7],
+    ];
+    for (const [who, x, y] of moves) {
+      const turnId = state.turnId;
+      who.room.send('place', { x, y, turnId });
+      await waitFor(() => state.turnId !== turnId || state.phase === 'GAME_OVER');
+    }
+    await waitFor(() => state.phase === 'GAME_OVER');
+    expect(state.result).toBe('five');
+    expect(state.board[7 * 15 + 7]).toBe(1);
+    expect(has(guestSpy, 'game_over')).toBe(true);
+  });
+
+  it('G-22: 게임 중 나가면 상대가 player_replaced(left)를 받는다', async () => {
+    const host = await createGomoku({ blackPolicy: 'host' });
+    const guestSpy = await joinRoom(host.room.roomId, newGuest(), '손님');
+    guestSpy.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as { phase: string };
+    await waitFor(() => state.phase === 'PLAYING');
+    await guestSpy.room.leave();
+    await waitFor(() =>
+      host.messages.some((m) => m.type === 'player_replaced' && m.payload.reason === 'left'),
+    );
+  });
+});
