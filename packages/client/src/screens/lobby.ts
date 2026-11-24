@@ -2,15 +2,16 @@ import { NICKNAME_MAX, normalizeNickname, normalizeRoomCode } from '@wmg/rules';
 import { h, svg } from '../dom.js';
 import type { GameInfo } from '../games/registry.js';
 import { dieSvg, icons } from '../icons.js';
-import { describeError, JoinError, type Session } from '../net.js';
+import type { GameSession } from '../games/flow.js';
+import { describeError, JoinError } from '../net.js';
 import { saveNickname, savedNickname } from '../identity.js';
 import { rulesButton } from './rulesSheet.js';
 
 export interface LobbyActions {
-  create(nickname: string): Promise<Session>;
-  join(code: string, nickname: string): Promise<Session>;
-  quickMatch(nickname: string): Promise<Session>;
-  entered(session: Session): void;
+  create(nickname: string): Promise<GameSession>;
+  join(code: string, nickname: string): Promise<GameSession>;
+  quickMatch(nickname: string): Promise<GameSession>;
+  entered(session: GameSession): void;
   /** 메인(게임 목록)으로 */
   back(): void;
 }
@@ -52,7 +53,7 @@ export function renderLobby(
     for (const b of buttons) b.disabled = on;
   };
 
-  const withNickname = async (run: (nickname: string) => Promise<Session>) => {
+  const withNickname = async (run: (nickname: string) => Promise<GameSession>) => {
     const nickname = normalizeNickname(nickInput.value);
     if (!nickname) {
       error.textContent = describeError('INVALID_NICKNAME');

@@ -10,7 +10,7 @@ import {
   type RoomOptions,
   type ServerMessages,
 } from '@wmg/rules';
-import { SERVER_URL } from './config.js';
+import { serverUrl } from './config.js';
 import { guestId } from './identity.js';
 
 /** 공유 상태(공개 정보)를 평범한 객체로 옮긴 것. 서버 state.ts와 같은 모양이다 */
@@ -81,13 +81,26 @@ export function describeError(code: string): string {
     SERVER_DRAINING: '서버 점검 중입니다. 잠시 후 다시 시도해 주세요.',
     DUPLICATE_SESSION: '다른 탭에서 같은 계정으로 접속해 이 화면을 닫았습니다.',
     KICKED: '방장이 이 방에서 내보냈습니다. 이 방에는 다시 들어갈 수 없습니다.',
+    NOT_YOUR_TURN: '내 차례가 아닙니다.',
+    STALE_TURN: '이미 지난 차례입니다.',
+    INVALID_MOVE: '판 밖에는 둘 수 없습니다.',
+    OCCUPIED: '이미 돌이 있는 자리입니다.',
+    FORBIDDEN_MOVE: '흑은 이 자리에 둘 수 없습니다 (금수).',
     RATE_LIMITED: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
     NETWORK: '서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.',
   };
   return map[code] ?? '요청을 처리하지 못했습니다.';
 }
 
-function toJoinError(error: unknown): JoinError {
+/** 연결 종료 코드 → 사용자 문구용 코드. 4001~4003은 서버가 정한 종료 코드 (rules CLOSE_CODES), 그 밖의 비정상 종료는 재연결 실패로 본다 */
+export function closeReason(code: number): string | null {
+  if (code === CLOSE_CODES.DUPLICATE_SESSION) return 'DUPLICATE_SESSION';
+  if (code === CLOSE_CODES.RATE_LIMITED) return 'RATE_LIMITED';
+  if (code === CLOSE_CODES.KICKED) return 'KICKED';
+  return code === 1000 ? null : 'NETWORK';
+}
+
+export function toJoinError(error: unknown): JoinError {
   const message = error instanceof Error ? error.message : String(error);
   const known = [
     'ROOM_FULL',
@@ -154,17 +167,7 @@ export class Session {
     room.onDrop(() => this.#update({ connection: 'reconnecting' }));
     room.onReconnect(() => this.#update({ connection: 'online' }));
     room.onLeave((code) => {
-      // 4001~4003은 서버가 정한 종료 코드 (rules CLOSE_CODES). 그 밖의 비정상 종료는 재연결 실패로 본다
-      const reason =
-        code === CLOSE_CODES.DUPLICATE_SESSION
-          ? 'DUPLICATE_SESSION'
-          : code === CLOSE_CODES.RATE_LIMITED
-            ? 'RATE_LIMITED'
-            : code === CLOSE_CODES.KICKED
-              ? 'KICKED'
-              : code === 1000
-                ? null
-                : 'NETWORK';
+      const reason = closeReason(code);
       for (const h of this.#closedHandlers) h(reason);
     });
   }
@@ -218,6 +221,11 @@ export class Session {
       };
       this.#listeners.add(check);
     });
+  }
+
+  /** 주소에 쓰는 방 코드 */
+  get roomCode(): string {
+    return this.#snapshot.view.roomCode || this.room.roomId;
   }
 
   get snapshot(): SessionSnapshot {
@@ -284,7 +292,8 @@ export class Session {
 }
 
 let client: Client | null = null;
-function sdk(): Client {
-  client ??= new Client(SERVER_URL);
+/** 게임마다 같은 Colyseus 클라이언트를 쓴다 */
+export function sdk(): Client {
+  client ??= new Client(serverUrl());
   return client;
 }

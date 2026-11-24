@@ -3,20 +3,24 @@ import { h, mount, toast } from './dom.js';
 import { SITE } from './games/catalog.js';
 import { GAMES, LEGACY_GAME_ID, type GameInfo } from './games/registry.js';
 import { savedNickname } from './identity.js';
-import { describeError, JoinError, Session } from './net.js';
+import type { GameFlow, GameSession } from './games/flow.js';
+import { describeError, JoinError } from './net.js';
 import { invitePath, lobbyPath, parseRoute } from './routes.js';
-import { mountGame } from './screens/game.js';
 import { renderHub } from './screens/hub.js';
 import { renderLobby } from './screens/lobby.js';
-import { renderWaiting } from './screens/waiting.js';
 
 /**
  * 라우트 (ADR 0002): / 메인(게임 선택), /<게임> 로비, /<게임>/r/<코드> 초대 링크, /r/<코드> 이전 초대 링크.
  * 방에 들어가면 주소를 초대 링크로 바꿔, 새로고침해도 같은 게스트 ID로 자리를 되찾는다 (TC-16).
  */
-let session: Session | null = null;
+let session: GameSession | null = null;
 let teardown: (() => void) | null = null;
-let screen: 'waiting' | 'game' | null = null;
+
+/** 플레이할 수 있는 게임은 registry에 연결과 화면(flow)이 있다 */
+function flowOf(game: GameInfo): GameFlow {
+  if (!game.flow) throw new Error(`no flow for ${game.id}`);
+  return game.flow;
+}
 
 function setTitle(game: GameInfo | null): void {
   document.title = game ? `${game.name} · ${SITE.name}` : `${SITE.name} · ${SITE.fullName}`;
@@ -30,7 +34,6 @@ function navigate(path: string): void {
 function showHub(notice: string | null = null): void {
   teardown?.();
   teardown = null;
-  screen = null;
   setTitle(null);
   mount(renderHub(GAMES, (game) => navigate(lobbyPath(game))));
   if (notice) toast(notice);
@@ -39,15 +42,15 @@ function showHub(notice: string | null = null): void {
 function showLobby(game: GameInfo, code: string | null = null, notice: string | null = null): void {
   teardown?.();
   teardown = null;
-  screen = null;
   setTitle(game);
+  const flow = flowOf(game);
   mount(
     renderLobby(
       game,
       {
-        create: (n) => Session.create(n, {}),
-        join: (c, n) => Session.join(c, n),
-        quickMatch: (n) => Session.quickMatch(n),
+        create: (n) => flow.create(n),
+        join: (c, n) => flow.join(c, n),
+        quickMatch: (n) => flow.quickMatch(n),
         entered: (s) => enter(game, s),
         back: () => navigate('/'),
       },
@@ -65,10 +68,9 @@ function exitToLobby(game: GameInfo, notice: string | null = null): void {
   showLobby(game, null, notice);
 }
 
-function enter(game: GameInfo, s: Session): void {
+function enter(game: GameInfo, s: GameSession): void {
   session = s;
-  const code = s.snapshot.view.roomCode || s.room.roomId;
-  const path = invitePath(game, code);
+  const path = invitePath(game, s.roomCode);
   if (location.pathname !== path) history.replaceState(null, '', path);
   s.onClosed((reason) => {
     if (session !== s) return;
@@ -78,22 +80,7 @@ function enter(game: GameInfo, s: Session): void {
     history.replaceState(null, '', lobbyPath(game));
     showLobby(game, null, reason ? describeError(reason) : '방이 닫혔습니다.');
   });
-  s.subscribe((snap) => {
-    if (session !== s) return;
-    const want = snap.view.phase === 'WAITING' ? 'waiting' : 'game';
-    if (want === 'waiting') {
-      teardown?.();
-      teardown = null;
-      screen = 'waiting';
-      mount(renderWaiting(s, snap, () => exitToLobby(game)));
-    } else if (screen !== 'game') {
-      teardown?.();
-      screen = 'game';
-      const root = h('div');
-      mount(root);
-      teardown = mountGame(root, s, () => exitToLobby(game));
-    }
-  });
+  teardown = flowOf(game).mount(s, { exit: () => exitToLobby(game) });
 }
 
 async function boot(): Promise<void> {
@@ -129,7 +116,7 @@ async function boot(): Promise<void> {
       h('main', { class: 'page narrow centered' }, h('div', { class: 'spinner', 'aria-label': '입장 중' })),
     );
     try {
-      enter(game, await Session.join(code, nickname));
+      enter(game, await flowOf(game).join(code, nickname));
       return;
     } catch (e) {
       showLobby(game, code, describeError(e instanceof JoinError ? e.code : 'NETWORK'));

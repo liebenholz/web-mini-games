@@ -221,7 +221,7 @@ test('Phase 2 M1: 메인은 게임만 고르고, 준비 중인 게임은 누를 
 
   const dice = page.getByTestId('game-liars-dice');
   await expect(dice).toContainText('내 주사위를 단서로 거짓말을 잡아내요');
-  for (const id of ['gomoku', 'one-card']) {
+  for (const id of ['one-card']) {
     const card = page.getByTestId(`game-${id}`);
     await expect(card).toContainText('준비 중');
     await expect(card.getByRole('button')).toHaveCount(0);
@@ -243,7 +243,7 @@ test('Phase 2 M1: 메인은 게임만 고르고, 준비 중인 게임은 누를 
 });
 
 test('Phase 2 M1: 준비 중인 게임 주소는 메인으로 보낸다', async ({ page }) => {
-  await page.goto('/gomoku');
+  await page.goto('/one-card');
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('#toast')).toContainText('준비 중인 게임입니다');
 });
