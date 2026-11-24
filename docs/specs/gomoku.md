@@ -142,9 +142,12 @@
 
 ## 10. 기록 (DB)
 
-- `games.game_type = 'gomoku'`(ADR 0002)로 판을 남긴다.
-- 수 순서 테이블: `gomoku_moves(game_id, move_no, color, x, y, is_bot, created_at)`. 판이 끝날 때 한 번에 저장한다.
-- 저장된 수로 판을 재현해 결과(G-04, G-05, G-11, G-12)를 다시 판정하는 리플레이 검사를 둔다.
+판이 끝날 때 **판 요약**만 한 번에 저장한다 (마이그레이션 `002_game_type_summary`).
+
+- `games`: `game_type = 'gomoku'`, `options`(금수 3-3/4-4/장목, 흑 정하기, 턴 시간, 봇 채우기), `end_reason`(`five` / `timeout` / `draw`), `summary`(JSON: `result`, `winnerColor`, `moveCount`, `botMoveCount`, `hasBot`)
+- `game_players`: 자리 0 = 흑, 1 = 백. 이긴 쪽 순위 1, 진 쪽 2, 무승부면 둘 다 1. 처음부터 봇인 자리는 `player_id`가 비어 있다
+- 수 순서(좌표)는 저장하지 않는다. 계정이 없어 복기할 사람이 없고, 지금 필요한 것은 운영 통계(판 수, 완주율, 시간패 비율, 금수 설정별 흑 승률)다
+- 나중에 복기 링크나 리플레이 검증이 필요해지면 `gomoku_moves(game_id, move_no, color, x, y, is_bot)` 테이블을 새 마이그레이션으로 추가한다
 
 ## 11. 대표 테스트 케이스
 

@@ -66,6 +66,7 @@ Phase 1은 거짓말쟁이 주사위 하나를 전제로 만들었다 (첫 화�
 
 - `games` 테이블에 `game_type text NOT NULL DEFAULT 'liars_dice'` 컬럼을 추가하는 마이그레이션을 만든다. 기존 기록은 거짓말쟁이 주사위로 채워진다.
 - 라운드와 수 기록은 게임마다 구조가 달라서 게임별 테이블로 둔다 (`rounds`, `bids`는 거짓말쟁이 주사위 전용으로 남는다).
+- 게임별 테이블이 아직 없는 게임은 `games.summary`(JSON)에 판 요약만 남긴다. 오목이 이렇게 시작한다 (`002_game_type_summary`).
 
 ## 고려한 대안
 

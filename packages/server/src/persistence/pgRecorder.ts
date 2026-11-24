@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { MIGRATIONS } from './migrations.js';
-import type { GameRecord, GameRecorder } from './types.js';
+import type { GamePlayerRecord, GameRecord, GameRecorder, GameSummaryRecord } from './types.js';
 
 type Log = (level: 'info' | 'warn' | 'error', message: string, extra?: Record<string, unknown>) => void;
 
@@ -49,14 +49,7 @@ export async function migrate(pool: pg.Pool): Promise<string[]> {
 export async function writeGame(client: pg.PoolClient, r: GameRecord): Promise<void> {
   await client.query('BEGIN');
   try {
-    for (const p of r.players) {
-      if (!p.guestId) continue;
-      await client.query(
-        `INSERT INTO players (id, nickname) VALUES ($1, $2)
-         ON CONFLICT (id) DO UPDATE SET nickname = EXCLUDED.nickname, last_seen_at = now()`,
-        [p.guestId, p.nickname],
-      );
-    }
+    await upsertPlayers(client, r.players);
     await client.query(
       `INSERT INTO games (id, room_code, options, started_at, ended_at, end_reason)
        VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
@@ -107,6 +100,50 @@ export async function writeGame(client: pg.PoolClient, r: GameRecord): Promise<v
   }
 }
 
+async function upsertPlayers(client: pg.PoolClient, players: readonly GamePlayerRecord[]): Promise<void> {
+  for (const p of players) {
+    if (!p.guestId) continue;
+    await client.query(
+      `INSERT INTO players (id, nickname) VALUES ($1, $2)
+       ON CONFLICT (id) DO UPDATE SET nickname = EXCLUDED.nickname, last_seen_at = now()`,
+      [p.guestId, p.nickname],
+    );
+  }
+}
+
+/** 판 요약 하나를 한 트랜잭션으로 저장한다: games 한 줄 + game_players (ADR 0002) */
+export async function writeSummary(client: pg.PoolClient, r: GameSummaryRecord): Promise<void> {
+  await client.query('BEGIN');
+  try {
+    await upsertPlayers(client, r.players);
+    await client.query(
+      `INSERT INTO games (id, room_code, options, started_at, ended_at, end_reason, game_type, summary)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING`,
+      [
+        r.gameId,
+        r.roomCode,
+        JSON.stringify(r.options),
+        r.startedAt,
+        r.endedAt,
+        r.endReason,
+        r.gameType,
+        JSON.stringify(r.summary),
+      ],
+    );
+    for (const p of r.players) {
+      await client.query(
+        `INSERT INTO game_players (game_id, seat, player_id, nickname, is_bot, final_rank)
+         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
+        [r.gameId, p.seat, p.guestId, p.nickname, p.isBot, p.finalRank],
+      );
+    }
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  }
+}
+
 /**
  * PostgreSQL 저장소. save()는 절대 throw하지 않는다: 실패하면 로그를 남기고 백그라운드에서 재시도한다.
  * 모든 재시도가 실패하면 기록 전체를 error 로그로 남겨 수동 복구할 수 있게 한다.
@@ -130,15 +167,23 @@ export class PgRecorder implements GameRecorder {
   }
 
   async save(record: GameRecord): Promise<void> {
-    await this.#attempt(record, 0);
+    await this.#attempt(record, (client) => writeGame(client, record), 0);
   }
 
-  async #attempt(record: GameRecord, attempt: number): Promise<void> {
+  async saveSummary(record: GameSummaryRecord): Promise<void> {
+    await this.#attempt(record, (client) => writeSummary(client, record), 0);
+  }
+
+  async #attempt(
+    record: GameRecord | GameSummaryRecord,
+    write: (client: pg.PoolClient) => Promise<void>,
+    attempt: number,
+  ): Promise<void> {
     if (this.#closed) return;
     try {
       const client = await this.pool.connect();
       try {
-        await writeGame(client, record);
+        await write(client);
       } finally {
         client.release();
       }
@@ -161,7 +206,7 @@ export class PgRecorder implements GameRecorder {
       });
       const timer = setTimeout(() => {
         this.#timers.delete(timer);
-        void this.#attempt(record, attempt + 1);
+        void this.#attempt(record, write, attempt + 1);
       }, delay);
       timer.unref();
       this.#timers.add(timer);

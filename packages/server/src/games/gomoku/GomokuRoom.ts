@@ -5,6 +5,7 @@ import { generateRoomCode, ROOM_CODES_KEY } from '../../framework/roomCode.js';
 import { TimerScheduler } from '../../framework/scheduler.js';
 import { activeRooms, runtime } from '../liars-dice/runtime.js';
 import { GOMOKU_SPECTATOR_LIMIT, GomokuMatch, type GomokuIO } from './GomokuMatch.js';
+import { toGomokuSummary } from './record.js';
 import type { GomokuState } from './state.js';
 
 const CLIENT_MESSAGES: readonly gomoku.GomokuClientMessageType[] = [
@@ -215,13 +216,14 @@ export class GomokuRoom extends Room<{ state: GomokuState }> {
       client.leave(CLOSE_CODES.KICKED);
     },
     onFinished: (record) => {
-      // 기록 저장(gomoku_moves)은 다음 단계에서 붙인다. 지금은 운영 로그로 남긴다
       runtime.log('info', 'gomoku game finished', {
         roomCode: record.roomCode,
         result: record.result,
         winner: record.winnerColor,
         moves: record.moves.length,
       });
+      // 판 요약만 저장한다 (ADR 0002). 저장소는 실패해도 던지지 않고 재시도한다
+      void runtime.recorder.saveSummary(toGomokuSummary(record));
     },
   };
 }
