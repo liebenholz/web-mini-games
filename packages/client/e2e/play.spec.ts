@@ -97,6 +97,36 @@ test('M4: 초대 링크 /r/:code로 바로 대기실에 들어간다', async ({ 
   await friend.close();
 });
 
+for (const path of ['/', '/r/ABC234']) {
+  test(`로비: 게임 규칙 시트를 열고 위아래로 읽은 뒤 닫는다 (${path})`, async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.goto(path);
+    const open = page.getByTestId('rules-open');
+    await open.click();
+
+    const sheet = page.getByRole('dialog', { name: '게임 규칙' });
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toContainText('1은 어떤 눈으로도 함께 세요');
+    // 본문만 스크롤되고, 끝까지 내리면 마지막 팁이 보인다. 확인 버튼은 그대로 화면 안에 있다
+    const body = sheet.locator('.rules-scroll');
+    expect(await body.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    await body.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    await expect(sheet.locator('.rules-tip')).toBeInViewport();
+    await expect(sheet.getByRole('button', { name: '알겠어요' })).toBeInViewport();
+    await expectAllButtonsOnScreen(page);
+
+    await sheet.getByRole('button', { name: '알겠어요' }).click();
+    await expect(sheet).toBeHidden();
+    await expect(open).toBeFocused();
+
+    // ESC로도 닫힌다
+    await open.click();
+    await expect(sheet).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(sheet).toBeHidden();
+  });
+}
+
 test.describe('고해상도 화면 (DPR 2)', () => {
   test.use({ viewport: { width: 360, height: 740 }, deviceScaleFactor: 2 });
 

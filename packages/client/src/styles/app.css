@@ -1184,3 +1184,175 @@ p {
   justify-content: space-between;
   margin-bottom: var(--space-2);
 }
+
+/* ───── 게임 규칙 시트 ───── */
+.rules-btn {
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  gap: var(--space-2);
+  border-radius: var(--radius-pill);
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--p1-fg);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.rules-btn:hover {
+  background: var(--p1-bg);
+}
+
+.rules-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+body.sheet-open {
+  overflow: hidden;
+}
+
+/* 제목과 확인 버튼은 고정, 본문만 위아래로 스크롤 */
+.rules-sheet {
+  width: min(520px, 100%);
+  height: min(88dvh, 760px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -12px 40px -16px rgb(29 27 44 / 0.4);
+  animation: rise 220ms var(--ease-out);
+}
+
+.sheet-grabber {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-top: var(--space-2);
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+
+.rules-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
+}
+
+.rules-head h2 {
+  font-size: 1.25rem;
+}
+
+.rules-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--space-5) var(--space-4);
+}
+
+.rules-scroll:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.rules-intro {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
+.rules-steps {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+}
+
+.rules-steps li {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.rules-steps h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-1);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.rules-steps p {
+  color: var(--ink-2);
+  line-height: 1.6;
+  font-size: 0.9375rem;
+}
+
+.rules-num {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--p1-fg);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.rules-example {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rules-dice {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.rules-die {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+}
+
+.rules-die svg {
+  width: 24px;
+  height: 24px;
+}
+
+.rules-die svg rect {
+  stroke: none;
+}
+
+.rules-die.hit {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.rules-tip {
+  margin-top: var(--space-4);
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.rules-tip b {
+  color: var(--ink-2);
+}
+
+.rules-foot {
+  padding: var(--space-3) var(--space-5) max(var(--space-4), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
