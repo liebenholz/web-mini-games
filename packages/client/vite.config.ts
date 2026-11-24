@@ -57,16 +57,11 @@ function linkPreviews(): Plugin {
           html.slice(tail);
         this.emitFile({ type: 'asset', fileName: `${game.id}/index.html`, source });
       }
-      // Cloudflare Pages 주소 규칙: 게임 주소는 게임 HTML로, 기존 /r/<코드> 초대 링크는 거짓말쟁이 주사위로, 나머지는 메인
+      // Cloudflare Pages 주소 규칙: 게임 주소는 게임 HTML로, 기존 /r/<코드> 초대 링크는 거짓말쟁이 주사위로, 나머지는 메인.
+      // 대상에 .html을 쓰면 Pages가 확장자 없는 주소로 다시 보내면서 규칙이 무시되므로 폴더 주소(/<게임>)를 쓴다.
+      // /<게임> 자체는 Pages가 <게임>/index.html을 바로 내주므로 규칙이 필요 없다
       const available = CATALOG.filter((g) => g.status === 'available');
-      const rules = [
-        ...available.flatMap((g) => [
-          `/${g.id} /${g.id}/index.html 200`,
-          `/${g.id}/* /${g.id}/index.html 200`,
-        ]),
-        '/r/* /liars-dice/index.html 200',
-        '/* /index.html 200',
-      ];
+      const rules = [...available.map((g) => `/${g.id}/* /${g.id} 200`), '/r/* /liars-dice 200', '/* / 200'];
       this.emitFile({ type: 'asset', fileName: '_redirects', source: `${rules.join('\n')}\n` });
     },
   };
