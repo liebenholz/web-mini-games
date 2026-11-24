@@ -409,3 +409,32 @@ describe('OneCardRoom 통합 (Phase 2 M3)', () => {
     for (const card of handOf(guest)) expect(state).not.toContain(`"${card}"`);
   });
 });
+
+describe('BullsRoom 통합 (Phase 2 M4)', () => {
+  it('두 사람이 비밀 숫자를 정하면 추측이 시작되고, 비밀 숫자는 본인에게만 간다 (B-20, B-21)', async () => {
+    const room = await colyseus.sdk.create('bulls_and_cows', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { fillWithBots: false, turnSeconds: 15 },
+    });
+    const host = spy(room);
+    await waitFor(() => host.playerId !== '');
+    const guest = await joinRoom(host.room.roomId, newGuest(), '손님');
+    expect(host.room.name).toBe('bulls_and_cows');
+    guest.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as { phase: string };
+    await waitFor(() => state.phase === 'SECRET', 10_000);
+    host.room.send('set_secret', { digits: '102' });
+    guest.room.send('set_secret', { digits: '345' });
+    await waitFor(() => state.phase === 'PLAYING');
+    const secretOf = (s: Spy) =>
+      s.messages.filter((m) => m.type === 'your_secret').map((m) => m.payload.digits);
+    expect(secretOf(host)).toEqual(['102']);
+    expect(secretOf(guest)).toEqual(['345']);
+    const json = JSON.stringify((host.room.state as { toJSON(): unknown }).toJSON());
+    expect(json).not.toContain('345');
+    expect(has(host, 'turn_start')).toBe(true);
+  });
+});

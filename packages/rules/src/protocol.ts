@@ -46,6 +46,8 @@ export const ERROR_CODES = [
   // 원카드 내기 거부 (one-card.md CE-02~CE-04)
   'INVALID_CARD',
   'INVALID_SUIT',
+  // 숫자야구 비밀 숫자·추측 형식 (bulls-and-cows.md BE-02)
+  'INVALID_GUESS',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
