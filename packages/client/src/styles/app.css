@@ -2363,6 +2363,37 @@ button.game-main:focus-visible,
   padding: var(--space-2) var(--space-3) max(var(--space-3), env(safe-area-inset-bottom));
 }
 
+.oc-hand-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px 0;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.oc-hand-title {
+  font-weight: 700;
+}
+
+.oc-my-count {
+  min-width: 44px;
+  text-align: center;
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.875rem;
+}
+
+/* 1장: 원카드 직전, 15장 이상: 파산(20장 초과)이 가까움 */
+.oc-my-count.one,
+.oc-my-count.many {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 .oc-hand {
   position: relative;
   height: 122px;
@@ -2583,6 +2614,7 @@ button.game-main:focus-visible,
 }
 
 .oc-call[hidden],
+.oc-hand-head[hidden],
 .oc-notice[hidden],
 .oc-actions[hidden],
 .oc-actions .btn[hidden] {

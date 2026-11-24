@@ -16,7 +16,7 @@ async function stones(page: Page): Promise<number> {
 
 /** 오목 방을 만들고 방장이 흑으로 봇과 대국을 시작한다 */
 async function startVsBot(page: Page, turnSeconds?: '15' | '30' | '60') {
-  await page.addInitScript(() => localStorage.setItem('wmg.gomoku.nickname', '오목테스터'));
+  await page.addInitScript(() => localStorage.setItem('wmg.nickname', '오목테스터'));
   await page.goto('/gomoku');
   await page.getByRole('button', { name: '방 만들기' }).click();
   await expect(page.getByTestId('room-code')).toBeVisible();
@@ -48,7 +48,7 @@ test('Phase 2 M2: 메인에서 오목을 골라 로비로 간다', async ({ page
 
 test('대기실: 옵션 요약을 누르면 방 옵션으로 내려가고, 기본 금수는 모두 켜져 있다', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 });
-  await page.addInitScript(() => localStorage.setItem('wmg.gomoku.nickname', '방장'));
+  await page.addInitScript(() => localStorage.setItem('wmg.nickname', '방장'));
   await page.goto('/gomoku');
   await page.getByRole('button', { name: '방 만들기' }).click();
   const summary = page.getByTestId('options-summary');
