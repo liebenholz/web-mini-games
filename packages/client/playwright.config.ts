@@ -18,7 +18,14 @@ export default defineConfig({
     // 로컬에 설치된 Chrome을 쓰려면 PW_CHANNEL=chrome (CI는 playwright install로 받은 Chromium)
     ...(process.env.PW_CHANNEL ? { channel: process.env.PW_CHANNEL } : {}),
   },
-  projects: [{ name: 'mobile-360', use: { ...devices['Pixel 5'], viewport: { width: 360, height: 740 } } }],
+  projects: [
+    {
+      name: 'mobile-360',
+      // Pixel 5의 화소 밀도(2.75)로 캔버스를 그리면 GPU 없는 CI 러너가 크게 느려져 짧은 턴 안에 클릭을 놓친다.
+      // 게임 흐름은 화소 밀도와 무관하므로 1로 두고, 고해상도 렌더링은 play.spec.ts의 DPR 2 테스트가 따로 검사한다
+      use: { ...devices['Pixel 5'], viewport: { width: 360, height: 740 }, deviceScaleFactor: 1 },
+    },
+  ],
   webServer: [
     {
       command: `pnpm --filter server exec tsx --conditions=source src/index.ts`,
