@@ -10,3 +10,6 @@ export * as gomoku from './games/gomoku/index.js';
 
 /** 원카드 룰 엔진 (docs/specs/one-card.md): oneCard.playCard(...) */
 export * as oneCard from './games/one-card/index.js';
+
+/** 숫자야구 룰 엔진 (docs/specs/bulls-and-cows.md): bulls.score(...) */
+export * as bulls from './games/bulls-and-cows/index.js';
