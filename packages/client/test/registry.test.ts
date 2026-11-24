@@ -6,7 +6,7 @@ import { findGame, GAMES, gameByRoomType } from '../src/games/registry.js';
 describe('게임 목록', () => {
   it('거짓말쟁이 주사위만 플레이할 수 있고, 오목과 원카드는 준비 중', () => {
     expect(GAMES.filter((g) => g.status === 'available').map((g) => g.id)).toEqual(['liars-dice']);
-    expect(findGame('omok')?.status).toBe('coming-soon');
+    expect(findGame('gomoku')?.status).toBe('coming-soon');
     expect(findGame('one-card')?.status).toBe('coming-soon');
   });
 
