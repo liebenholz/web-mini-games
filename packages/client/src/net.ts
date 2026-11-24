@@ -1,5 +1,6 @@
 import { Client, type Room } from '@colyseus/sdk';
 import {
+  CLOSE_CODES,
   GAME_ID,
   type ClientMessageType,
   type ClientMessages,
@@ -79,6 +80,7 @@ export function describeError(code: string): string {
     INVALID_OPTIONS: '방 옵션이 올바르지 않습니다.',
     SERVER_DRAINING: '서버 점검 중입니다. 잠시 후 다시 시도해 주세요.',
     DUPLICATE_SESSION: '다른 탭에서 같은 계정으로 접속해 이 화면을 닫았습니다.',
+    KICKED: '방장이 이 방에서 내보냈습니다. 이 방에는 다시 들어갈 수 없습니다.',
     RATE_LIMITED: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
     NETWORK: '서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.',
   };
@@ -93,6 +95,7 @@ function toJoinError(error: unknown): JoinError {
     'INVALID_OPTIONS',
     'INVALID_MESSAGE',
     'SERVER_DRAINING',
+    'KICKED',
   ] as const;
   for (const code of known) if (message.includes(code)) return new JoinError(code);
   const code = (error as { code?: number }).code;
@@ -151,15 +154,17 @@ export class Session {
     room.onDrop(() => this.#update({ connection: 'reconnecting' }));
     room.onReconnect(() => this.#update({ connection: 'online' }));
     room.onLeave((code) => {
-      // 4001/4002는 서버가 정한 종료 코드 (rules CLOSE_CODES). 그 밖의 비정상 종료는 재연결 실패로 본다
+      // 4001~4003은 서버가 정한 종료 코드 (rules CLOSE_CODES). 그 밖의 비정상 종료는 재연결 실패로 본다
       const reason =
-        code === 4001
+        code === CLOSE_CODES.DUPLICATE_SESSION
           ? 'DUPLICATE_SESSION'
-          : code === 4002
+          : code === CLOSE_CODES.RATE_LIMITED
             ? 'RATE_LIMITED'
-            : code === 1000
-              ? null
-              : 'NETWORK';
+            : code === CLOSE_CODES.KICKED
+              ? 'KICKED'
+              : code === 1000
+                ? null
+                : 'NETWORK';
       for (const h of this.#closedHandlers) h(reason);
     });
   }

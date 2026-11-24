@@ -72,13 +72,7 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
   const conn = h('span', { class: 'hint' });
   const tableHost = h('div', { class: 'table', 'aria-label': '게임 테이블', role: 'img' });
   const panel = h('section', { class: 'panel', 'aria-label': '선언' });
-  const statusbar = h(
-    'header',
-    { class: 'statusbar' },
-    h('span', { class: 'room' }, `방 ${session.snapshot.view.roomCode}`),
-    conn,
-    total,
-  );
+  const statusbar = h('header', { class: 'statusbar' }, conn, total);
   const shell = h('div', { class: 'game' }, statusbar, tableHost, panel);
   root.replaceChildren(shell);
 
@@ -449,11 +443,8 @@ export function mountGame(root: HTMLElement, session: Session, onExit: () => voi
   }
 
   const off = session.subscribe(render);
-  const back = h(
-    'button',
-    { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': '나가기' },
-    svg(icons.back),
-  );
+  // 게임 중에는 방 코드를 보여 주지 않는다 (화면 공유·방송 때 노출 방지). 초대는 대기실에서 한다
+  const back = h('button', { class: 'btn btn-ghost back-link', type: 'button' }, svg(icons.back), '나가기');
   back.addEventListener('click', () => {
     if (confirm('게임에서 나갈까요? 남은 주사위는 봇이 이어받습니다.')) onExit();
   });

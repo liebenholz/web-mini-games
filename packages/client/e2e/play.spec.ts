@@ -47,6 +47,10 @@ test('M4·Phase 2 M1: 메인에서 게임을 골라 사람 1명 + 봇 2명으로
 
   // 게임 화면: 내 차례가 오면 직접 선언한다
   await expect(page.locator('canvas')).toBeVisible();
+  // 게임 중에는 방 코드를 보여 주지 않고 상단은 "나가기"다
+  const roomCode = page.url().split('/').at(-1)!;
+  await expect(page.locator('.statusbar')).not.toContainText(roomCode);
+  await expect(page.locator('.statusbar').getByRole('button', { name: '나가기' })).toBeVisible();
 
   // E2E는 시간 배율 때문에 공개가 150ms 정도로 짧다. 기다리기 시작하기 전에 지나가 버릴 수 있으므로
   // 게임 내내 판정 요약과 직전 판정 버튼이 나타났는지 기록해 두고 끝에서 확인한다
@@ -132,6 +136,79 @@ for (const path of ['/liars-dice', '/liars-dice/r/ABC234', '/r/ABC234']) {
     await expect(sheet).toBeHidden();
   });
 }
+
+test('대기실: 방 코드를 가려도 코드와 초대 링크는 그대로 복사되고, 가림 상태는 기억된다', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/liars-dice');
+  await setNickname(page, '방장');
+  await page.getByRole('button', { name: '방 만들기' }).click();
+  const code = page.getByTestId('room-code');
+  await expect(code).toHaveText(/^[A-HJ-NP-Z2-9]{6}$/);
+  const real = await code.innerText();
+
+  await page.getByRole('button', { name: '방 코드 가리기' }).click();
+  await expect(code).toHaveText('••••••');
+  await expect(page.locator('.room-code')).not.toContainText(real);
+
+  await page.getByRole('button', { name: '코드 복사' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(real);
+  await page.getByRole('button', { name: '초대 링크 복사' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(
+    new RegExp(`/liars-dice/r/${real}$`),
+  );
+
+  // 새로고침해도 가린 상태가 유지되고, 다시 누르면 보인다
+  await page.reload();
+  await expect(page.getByTestId('room-code')).toHaveText('••••••');
+  await page.getByRole('button', { name: '방 코드 보기' }).click();
+  await expect(page.getByTestId('room-code')).toHaveText(real);
+});
+
+test('E-15: 방장이 참가자를 추방하면 확인 후 내보내고, 그 사람은 다시 들어올 수 없다', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/liars-dice');
+  await setNickname(page, '방장');
+  await page.getByRole('button', { name: '방 만들기' }).click();
+  const code = await page.getByTestId('room-code').innerText();
+
+  const friend = await browser.newContext({ viewport: { width: 360, height: 740 } });
+  await friend.addInitScript(() => localStorage.setItem('wmg.liars-dice.nickname', '민준'));
+  const friendPage = await friend.newPage();
+  await friendPage.goto(`/liars-dice/r/${code}`);
+  await expect(friendPage.getByTestId('room-code')).toBeVisible();
+
+  // 참가자 화면에는 추방 버튼이 없다
+  await expect(friendPage.getByTestId('kick')).toHaveCount(0);
+
+  const kick = page.getByRole('button', { name: '민준 추방' });
+  await expect(kick).toBeVisible();
+  await expectAllButtonsOnScreen(page);
+
+  // 취소하면 그대로
+  await kick.click();
+  const dialog = page.getByRole('alertdialog', { name: '민준 님을 추방할까요?' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: '취소' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('.seat .name', { hasText: '민준' })).toBeVisible();
+
+  // 추방
+  await kick.click();
+  await page.getByRole('alertdialog').getByRole('button', { name: '추방' }).click();
+  await expect(page.locator('.seat .name', { hasText: '민준' })).toHaveCount(0);
+  await expect(friendPage).toHaveURL(/\/liars-dice$/);
+  await expect(friendPage.locator('.error-text')).toContainText('방장이 이 방에서 내보냈습니다');
+
+  // 같은 초대 링크로 다시 들어오려 해도 거부된다
+  await friendPage.goto(`/liars-dice/r/${code}`);
+  await expect(friendPage.locator('.error-text')).toContainText('다시 들어갈 수 없습니다');
+  await friend.close();
+});
 
 test('Phase 2 M1: 메인은 게임만 고르고, 준비 중인 게임은 누를 수 없다', async ({ page }) => {
   await page.goto('/');

@@ -130,8 +130,9 @@ WAITING → STARTING → ROLLING → BIDDING ⟲(선언)
 | `set_options` | options(부분) | WAITING | 방장 아님(NOT_HOST), 범위 밖(INVALID_OPTIONS) |
 | `add_bot` | — | WAITING | 방장 아님, 자리 없음(ROOM_FULL) |
 | `remove_bot` | playerId | WAITING | 방장 아님, 봇이 아님 |
+| `kick_player` | playerId | WAITING | 방장 아님(NOT_HOST), 대상이 사람이 아니거나 본인(INVALID_MESSAGE) |
 
-`join_room`은 Colyseus 매칭(create / joinById / joinOrCreate)으로 처리하며 입장 옵션은 guestId, nickname, (만들 때) options다. 대기실 조작 3개는 8장 대기실 UI를 위해 추가했다 (ADR 0001).
+`join_room`은 Colyseus 매칭(create / joinById / joinOrCreate)으로 처리하며 입장 옵션은 guestId, nickname, (만들 때) options다. 대기실 조작(`set_options`, `add_bot`, `remove_bot`, `kick_player`)은 8장 대기실 UI를 위해 추가했다 (ADR 0001, 추방은 E-15).
 
 ### 서버 → 클라이언트
 
@@ -173,7 +174,7 @@ WAITING → STARTING → ROLLING → BIDDING ⟲(선언)
 | 화면 | 구성 요소 | 비고 |
 | --- | --- | --- |
 | 로비 | 닉네임 입력, 방 만들기, 방 코드로 입장, 랜덤 매칭 | 닉네임 2~12자 |
-| 대기실 | 좌석 목록, 준비 상태, 방 옵션(방장만 편집), 방 코드 복사, 봇 추가, 시작 버튼 | 초대 링크 `/r/:code` 복사 |
+| 대기실 | 좌석 목록, 준비 상태, 방 옵션(방장만 편집), 방 코드 가리기·복사, 봇 추가, 참가자 추방(방장만, 확인 후), 시작 버튼 | 초대 링크 `/liars-dice/r/:code` 복사. 코드를 가려도 복사는 그대로 된다. 게임 중에는 방 코드를 보여 주지 않는다 |
 | 게임 테이블 | 플레이어(닉네임, 남은 주사위 수, 차례 표시), 내 주사위, 현재 선언, 선언 기록, 턴 타이머 | 테이블 전체 주사위 수 항상 표시 |
 | 선언 패널 | 개수 +/−, 눈 선택(2~6), 선언 버튼, 라이어 버튼 | 불가능한 값 비활성화, 가장 낮은 합법 선언을 기본값으로 |
 | 공개 연출 | 모든 주사위 공개, 선언 눈과 1 강조, 합계 카운트, 패배자 표시 | 3초 후 자동 진행 |
@@ -204,8 +205,9 @@ WAITING → STARTING → ROLLING → BIDDING ⟲(선언)
 | E-12 | 없거나 가득 찬 방 코드 | 거부 | ROOM_NOT_FOUND / ROOM_FULL |
 | E-13 | 동일 계정 두 탭 접속 | 나중 연결 유지, 이전 연결 종료 | DUPLICATE_SESSION |
 | E-14 | 초당 10회 초과 요청 | 무시, 반복 시 연결 종료 | RATE_LIMITED |
+| E-15 | 방장이 대기실에서 참가자를 추방 | 대상 연결을 종료(4003), 그 게스트 ID는 방이 끝날 때까지 재입장 거부 | KICKED |
 
-로비 조작 거부 코드 (ADR 0001): `NOT_HOST`, `NOT_ENOUGH_PLAYERS`, `NOT_ALL_READY`, `INVALID_STATE`, `INVALID_OPTIONS`, `INVALID_NICKNAME`, `INVALID_MESSAGE`, `SERVER_DRAINING`.
+로비 조작 거부 코드 (ADR 0001): `NOT_HOST`, `NOT_ENOUGH_PLAYERS`, `NOT_ALL_READY`, `INVALID_STATE`, `INVALID_OPTIONS`, `INVALID_NICKNAME`, `INVALID_MESSAGE`, `SERVER_DRAINING`, `KICKED`.
 
 ## 10. 데이터 저장
 
