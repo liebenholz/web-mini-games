@@ -29,7 +29,7 @@ Phase 1은 거짓말쟁이 주사위 하나를 전제로 만들었다 (첫 화�
 | `id`       | `liars-dice` (주소)                       |
 | `roomType` | `liars_dice` (서버 방 종류, 기존 값 유지) |
 | `name`     | 거짓말쟁이 주사위                         |
-| `tagline`  | 내 주사위를 단서로 거짓말은 잡아내요      |
+| `tagline`  | 내 주사위를 단서로 거짓말을 잡아내요      |
 | `players`  | 2~6명                                     |
 | `minutes`  | 5~10분                                    |
 | `category` | `dice` / `card` / `board`                 |
