@@ -37,7 +37,7 @@ export const CATALOG: readonly GameCatalogEntry[] = [
     status: 'available',
   },
   {
-    id: 'omok',
+    id: 'gomoku',
     name: '오목',
     tagline: '다섯 개를 먼저 잇는 사람이 이겨요',
     lead: '가로, 세로, 대각선으로 다섯 개를 먼저 이어요.',

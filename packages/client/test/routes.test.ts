@@ -41,7 +41,7 @@ describe('주소 체계 (ADR 0002)', () => {
   });
 
   it('준비 중인 게임은 로비와 초대 링크 모두 coming-soon', () => {
-    expect(route('/omok').kind).toBe('coming-soon');
+    expect(route('/gomoku').kind).toBe('coming-soon');
     expect(route('/one-card/r/ABC234').kind).toBe('coming-soon');
   });
 

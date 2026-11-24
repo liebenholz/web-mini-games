@@ -221,7 +221,7 @@ test('Phase 2 M1: 메인은 게임만 고르고, 준비 중인 게임은 누를 
 
   const dice = page.getByTestId('game-liars-dice');
   await expect(dice).toContainText('내 주사위를 단서로 거짓말을 잡아내요');
-  for (const id of ['omok', 'one-card']) {
+  for (const id of ['gomoku', 'one-card']) {
     const card = page.getByTestId(`game-${id}`);
     await expect(card).toContainText('준비 중');
     await expect(card.getByRole('button')).toHaveCount(0);
@@ -243,7 +243,7 @@ test('Phase 2 M1: 메인은 게임만 고르고, 준비 중인 게임은 누를 
 });
 
 test('Phase 2 M1: 준비 중인 게임 주소는 메인으로 보낸다', async ({ page }) => {
-  await page.goto('/omok');
+  await page.goto('/gomoku');
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('#toast')).toContainText('준비 중인 게임입니다');
 });
@@ -255,10 +255,10 @@ test('Phase 2 M1: 닉네임은 게임별로 저장된다', async ({ page }) => {
   await expect(page.getByTestId('room-code')).toBeVisible();
   const stored = await page.evaluate(() => ({
     dice: localStorage.getItem('wmg.liars-dice.nickname'),
-    omok: localStorage.getItem('wmg.omok.nickname'),
+    gomoku: localStorage.getItem('wmg.gomoku.nickname'),
     legacy: localStorage.getItem('wmg.nickname'),
   }));
-  expect(stored).toEqual({ dice: '주사위전용', omok: null, legacy: null });
+  expect(stored).toEqual({ dice: '주사위전용', gomoku: null, legacy: null });
 });
 
 test.describe('고해상도 화면 (DPR 2)', () => {

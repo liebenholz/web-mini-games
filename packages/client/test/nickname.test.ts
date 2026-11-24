@@ -22,15 +22,15 @@ describe('게임별 닉네임 (ADR 0002)', () => {
   it('게임마다 따로 저장하고 읽는다', () => {
     saveNickname('liars-dice', '주사위왕');
     expect(savedNickname('liars-dice')).toBe('주사위왕');
-    expect(savedNickname('omok')).toBe('');
-    saveNickname('omok', '오목신');
+    expect(savedNickname('gomoku')).toBe('');
+    saveNickname('gomoku', '오목신');
     expect(savedNickname('liars-dice')).toBe('주사위왕');
-    expect(localStorage.getItem(nicknameKey('omok'))).toBe('오목신');
+    expect(localStorage.getItem(nicknameKey('gomoku'))).toBe('오목신');
   });
 
   it('Phase 1 닉네임(wmg.nickname)은 거짓말쟁이 주사위로 한 번 옮기고 지운다', () => {
     localStorage.setItem('wmg.nickname', '예전닉');
-    expect(savedNickname('omok')).toBe('');
+    expect(savedNickname('gomoku')).toBe('');
     expect(savedNickname('liars-dice')).toBe('예전닉');
     expect(localStorage.getItem('wmg.nickname')).toBeNull();
     expect(localStorage.getItem('wmg.liars-dice.nickname')).toBe('예전닉');
