@@ -1568,13 +1568,23 @@ button.game-main:focus-visible,
   font-weight: 700;
 }
 
-/* ───── 추방 버튼과 확인 팝업 (E-15) ───── */
-.btn-kick {
+/* ───── 좌석 X 버튼: 추방(빨강, E-15)과 봇 빼기(회색) ───── */
+.btn-seat-x {
   flex: none;
   width: 40px;
   min-height: 40px;
   padding: 0;
   border-color: transparent;
+  border-radius: 10px;
+}
+
+.btn-seat-x .icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+.btn-kick {
   background: var(--danger-soft);
   color: var(--danger);
 }
@@ -1584,9 +1594,14 @@ button.game-main:focus-visible,
   color: var(--danger-ink);
 }
 
-.btn-kick .icon {
-  width: 20px;
-  height: 20px;
+.btn-remove-bot {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.btn-remove-bot:hover:not(:disabled) {
+  background: var(--line-strong);
+  color: var(--ink);
 }
 
 .confirm-backdrop {
