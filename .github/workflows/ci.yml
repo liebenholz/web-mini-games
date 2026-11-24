@@ -46,6 +46,10 @@ jobs:
   e2e:
     runs-on: ubuntu-24.04
     needs: check
+    # 러너 이미지에 들어 있는 Google Chrome을 쓴다 (playwright.config.ts의 PW_CHANNEL).
+    # playwright install --with-deps는 브라우저 다운로드는 몇 초인데 apt로 시스템 라이브러리를 까는 데 6~12분이 걸렸다
+    env:
+      PW_CHANNEL: chrome
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -54,7 +58,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter client exec playwright install --with-deps chromium
+      - name: Check preinstalled Chrome
+        run: google-chrome --version
       - run: pnpm --filter client e2e
       - uses: actions/upload-artifact@v4
         if: failure()
