@@ -2,6 +2,12 @@ import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, roomCodeFromIndices } from '@wmg/
 import type { Rng } from './rng.js';
 
 /**
+ * 방 코드 사용 목록의 presence 키. Colyseus의 방 ID가 프로세스 전체에서 하나여야 해서
+ * 모든 게임이 같은 목록을 쓴다 (ADR 0002)
+ */
+export const ROOM_CODES_KEY = 'wmg:room-codes';
+
+/**
  * 명세 4장: 6자리 방 코드 (0, O, 1, I 제외). 32^6 ≈ 10억 가지.
  * `isTaken`은 presence(로컬 또는 Redis)에서 사용 중인지 확인한다.
  */

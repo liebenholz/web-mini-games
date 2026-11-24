@@ -1652,3 +1652,428 @@ button.game-main:focus-visible,
 .confirm-actions .btn {
   min-height: 48px;
 }
+
+/* ───── 오목 대기실: 옵션 요약과 금수 묶음 ───── */
+.options-summary {
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  cursor: pointer;
+}
+
+.options-summary:hover {
+  background: var(--surface-2);
+}
+
+.options-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.options-jump .icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* 넓은 화면은 옵션이 옆에 보이므로 "아래로 내려" 안내가 필요 없다 */
+@media (min-width: 860px) {
+  .options-jump {
+    display: none;
+  }
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.option-group > .label {
+  font-weight: 700;
+}
+
+/* ───── 오목 대국 ───── */
+.gomoku {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+
+.gomoku-bar {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  background: var(--bg);
+}
+
+.gomoku-moves {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.gomoku-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  /* 터치 확인 상자가 판을 가리지 않게 */
+  padding-bottom: calc(var(--space-3) + 120px);
+}
+
+.gomoku-side {
+  display: contents;
+}
+
+.gomoku-players {
+  order: -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.player-card {
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.player-card.active {
+  border: 2px solid var(--accent);
+  padding: calc(var(--space-2) - 1px) calc(var(--space-3) - 1px);
+}
+
+.player-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.player-line .name {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.stone-dot {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.stone-dot.black {
+  background: var(--ink);
+}
+
+.stone-dot.white {
+  background: #fff;
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+
+.player-card .tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.player-card .tag.mine {
+  color: var(--accent);
+}
+
+.player-card .tag.bot {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--p5-bg);
+  color: var(--p5-fg);
+}
+
+.player-card .tag.off {
+  color: var(--danger);
+}
+
+.gomoku-timer {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+
+.gomoku-timer i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.gomoku-timer.urgent i {
+  background: var(--danger);
+}
+
+.board-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.gomoku-board {
+  width: min(100%, 560px, calc(100dvh - 300px));
+  min-width: 280px;
+  aspect-ratio: 1;
+  height: auto;
+  /* G-36: 판 위에서는 스크롤·확대를 막는다 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.gomoku-board:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.gomoku-board .wood {
+  fill: #f3dca8;
+}
+
+.gomoku-board .grid-lines line {
+  stroke: #8a6a35;
+  stroke-width: 0.35;
+}
+
+.gomoku-board .star {
+  fill: #8a6a35;
+}
+
+.gomoku-board .stone.black {
+  fill: #1d1b2c;
+}
+
+.gomoku-board .stone.white {
+  fill: #fff;
+  stroke: #1d1b2c;
+  stroke-width: 0.5;
+}
+
+.gomoku-board .stone.win {
+  stroke: var(--accent);
+  stroke-width: 1.2;
+}
+
+.gomoku-board .last-move {
+  fill: var(--danger);
+}
+
+.gomoku-board .forbidden line {
+  stroke: var(--danger);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+}
+
+.gomoku-board .ghost {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.gomoku-board .ghost.black {
+  fill: #1d1b2c;
+}
+
+.gomoku-board .ghost.white {
+  fill: #fff;
+  stroke: #1d1b2c;
+  stroke-width: 0.5;
+}
+
+.gomoku-board .ghost-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.8;
+}
+
+.gomoku-board .lane {
+  fill: var(--accent);
+  opacity: 0.1;
+}
+
+.gomoku-help {
+  display: none;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.gomoku-help .x-mark {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+.gomoku-notice {
+  margin: var(--space-3) var(--space-3) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.gomoku-notice .icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.gomoku-notice.bot {
+  background: var(--p5-bg);
+  color: var(--p5-fg);
+}
+
+.gomoku-notice.off {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.gomoku-notice.ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.gomoku-confirm {
+  position: fixed;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  z-index: 8;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.gomoku-confirm strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.gomoku-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.gomoku-result {
+  position: fixed;
+  left: 50%;
+  bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 9;
+  width: min(420px, calc(100% - 2 * var(--space-3)));
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.gomoku-result.win {
+  border-color: var(--accent);
+}
+
+.gomoku-result .result-title {
+  font-size: 1.375rem;
+  font-weight: 800;
+}
+
+.gomoku-result.starting .result-title {
+  font-size: 1.125rem;
+}
+
+.result-actions {
+  margin-top: var(--space-3);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.result-actions .btn {
+  min-height: 48px;
+}
+
+/* PC: 판 왼쪽, 오른쪽 칸에 흑·백 카드와 조작 안내 (시안 3) */
+@media (min-width: 860px) {
+  .gomoku-main {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    padding: var(--space-4);
+  }
+  .gomoku-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 280px;
+  }
+  .gomoku-players {
+    order: 0;
+    grid-template-columns: 1fr;
+  }
+  .gomoku-help {
+    display: block;
+  }
+  .gomoku-board {
+    width: min(560px, calc(100dvh - 120px));
+  }
+  .gomoku-notice {
+    max-width: 880px;
+    margin: var(--space-3) auto 0;
+    width: calc(100% - 2 * var(--space-4));
+  }
+}
+
+/* display를 지정한 요소도 hidden이면 숨긴다 */
+.gomoku-confirm[hidden],
+.gomoku-result[hidden],
+.gomoku-notice[hidden] {
+  display: none;
+}
+
+/* 마우스·터치로 누를 때는 테두리를 그리지 않고, 키보드로 왔을 때만 보인다 */
+.gomoku-board:focus:not(:focus-visible) {
+  outline: none;
+}

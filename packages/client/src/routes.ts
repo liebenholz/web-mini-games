@@ -43,10 +43,10 @@ export function parseRoute(pathname: string, games: readonly GameInfo[], legacyG
   return isLobby ? { kind: 'lobby', game } : { kind: 'invite', game, code: code(parts[2]) };
 }
 
-export function lobbyPath(game: GameInfo): string {
+export function lobbyPath(game: Pick<GameInfo, 'id'>): string {
   return `/${game.id}`;
 }
 
-export function invitePath(game: GameInfo, code: string): string {
+export function invitePath(game: Pick<GameInfo, 'id'>, code: string): string {
   return `/${game.id}/r/${code}`;
 }

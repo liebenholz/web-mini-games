@@ -17,6 +17,11 @@ export const icons = {
   ),
   history: wrap('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>'),
   chevronRight: wrap('<path d="M9 6l6 6-6 6"/>'),
+  chevronDown: wrap('<path d="M6 9l6 6 6-6"/>'),
+  robot: wrap('<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01"/>'),
+  wifiOff: wrap(
+    '<path d="M3 3l18 18"/><path d="M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 4.2-2.6M14.8 10.3A10 10 0 0 1 19 12.9M2 9.4a15 15 0 0 1 4.3-2.9M12 20h.01"/>',
+  ),
   cards: wrap(
     '<rect x="3" y="6" width="11" height="15" rx="2"/><path d="M8 3.5l1-.5 11 3.6a1.5 1.5 0 0 1 1 1.9L18 18"/>',
   ),

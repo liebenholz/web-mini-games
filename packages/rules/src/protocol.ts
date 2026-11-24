@@ -39,6 +39,10 @@ export const ERROR_CODES = [
   'SERVER_DRAINING',
   // 방장이 대기실에서 내보냈다. 같은 방에 다시 들어올 수 없다
   'KICKED',
+  // 오목 착수 거부 (gomoku.md GE-02~GE-04)
+  'INVALID_MOVE',
+  'OCCUPIED',
+  'FORBIDDEN_MOVE',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
