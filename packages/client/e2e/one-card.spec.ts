@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 /** 원카드 방을 만들고 (빈자리 봇 3명) 시작한다. E2E 서버는 시간 배율 0.05라 턴이 짧다 */
 async function startWithBots(page: Page) {
-  await page.addInitScript(() => localStorage.setItem('wmg.one-card.nickname', '카드테스터'));
+  await page.addInitScript(() => localStorage.setItem('wmg.nickname', '카드테스터'));
   await page.goto('/one-card');
   await page.getByRole('button', { name: '방 만들기' }).click();
   await expect(page.getByTestId('room-code')).toBeVisible();
@@ -34,6 +34,10 @@ test('CT-16: 내 패만 앞면으로 보이고 상대 3명은 장수만 보인�
   await expect(opps.first()).toContainText('장');
   await expect(page.getByTestId('opponents').locator('[data-card]')).toHaveCount(0);
   await expect(page.getByTestId('top-card').locator('[data-card]')).toHaveCount(1);
+  // 내 패 장수를 숫자로 보여 준다 (폰에서 겹친 카드만으로는 세기 어렵다)
+  const count = await page.getByTestId('oc-hand').locator('.oc-hand-card').count();
+  await expect(page.getByTestId('my-count')).toHaveText(/^(\d+장|1장 남음!)$/);
+  expect(count).toBeGreaterThan(0);
 });
 
 test('M3: 사람 1명 + 봇 3명으로 한 판을 끝까지 하고 순위를 본다', async ({ page }) => {

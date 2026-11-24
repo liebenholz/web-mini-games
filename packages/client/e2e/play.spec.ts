@@ -177,7 +177,7 @@ test('E-15: 방장이 참가자를 추방하면 확인 후 내보내고, 그 사
   const code = await page.getByTestId('room-code').innerText();
 
   const friend = await browser.newContext({ viewport: { width: 360, height: 740 } });
-  await friend.addInitScript(() => localStorage.setItem('wmg.liars-dice.nickname', '민준'));
+  await friend.addInitScript(() => localStorage.setItem('wmg.nickname', '민준'));
   const friendPage = await friend.newPage();
   await friendPage.goto(`/liars-dice/r/${code}`);
   await expect(friendPage.getByTestId('room-code')).toBeVisible();
@@ -237,7 +237,8 @@ test('Phase 2 M1: 메인은 게임만 고르고, 세 게임 모두 들어갈 수
   // 로비 → 게임 목록으로 돌아오기
   await dice.getByRole('button', { name: '거짓말쟁이 주사위 하러 가기' }).click();
   await expect(page.getByRole('heading', { name: '거짓말쟁이 주사위' })).toBeVisible();
-  await expect(page.getByText('이 게임에서만 써요')).toBeVisible();
+  await expect(page.getByLabel('닉네임')).toBeVisible();
+  await expect(page.getByText('이 게임에서만 써요')).toHaveCount(0);
   await page.getByRole('button', { name: '게임 목록' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByTestId('game-liars-dice')).toBeVisible();
@@ -249,17 +250,16 @@ test('Phase 2 M1: 없는 게임 주소는 메인으로 보낸다', async ({ page
   await expect(page.locator('#toast')).toContainText('찾는 페이지가 없어');
 });
 
-test('Phase 2 M1: 닉네임은 게임별로 저장된다', async ({ page }) => {
+test('닉네임은 모든 게임이 같이 쓴다 (ADR 0002 개정)', async ({ page }) => {
   await page.goto('/liars-dice');
-  await setNickname(page, '주사위전용');
+  await setNickname(page, '공용닉네임');
   await page.getByRole('button', { name: '방 만들기' }).click();
   await expect(page.getByTestId('room-code')).toBeVisible();
-  const stored = await page.evaluate(() => ({
-    dice: localStorage.getItem('wmg.liars-dice.nickname'),
-    gomoku: localStorage.getItem('wmg.gomoku.nickname'),
-    legacy: localStorage.getItem('wmg.nickname'),
-  }));
-  expect(stored).toEqual({ dice: '주사위전용', gomoku: null, legacy: null });
+  expect(await page.evaluate(() => localStorage.getItem('wmg.nickname'))).toBe('공용닉네임');
+  for (const game of ['gomoku', 'one-card']) {
+    await page.goto(`/${game}`);
+    await expect(page.locator('#nickname')).toHaveValue('공용닉네임');
+  }
 });
 
 test.describe('고해상도 화면 (DPR 2)', () => {

@@ -16,7 +16,7 @@ export interface LobbyActions {
   back(): void;
 }
 
-/** 게임 로비: 닉네임(이 게임에서만 쓴다), 방 만들기, 코드로 입장, 랜덤 매칭 (명세 8장, ADR 0002) */
+/** 게임 로비: 닉네임(모든 게임 공용), 방 만들기, 코드로 입장, 랜덤 매칭 (명세 8장, ADR 0002) */
 export function renderLobby(
   game: GameInfo,
   actions: LobbyActions,
@@ -30,7 +30,7 @@ export function renderLobby(
     autocomplete: 'nickname',
     maxlength: NICKNAME_MAX,
     placeholder: '2~12자',
-    value: savedNickname(game.id),
+    value: savedNickname(),
     required: true,
   });
   const codeInput = h('input', {
@@ -60,7 +60,7 @@ export function renderLobby(
       nickInput.focus();
       return;
     }
-    saveNickname(game.id, nickname);
+    saveNickname(nickname);
     error.textContent = '';
     busy(true);
     try {
@@ -127,17 +127,7 @@ export function renderLobby(
       // 처음 온 사람이 닉네임을 넣기 전에 규칙을 볼 수 있게 소개 바로 아래에 둔다
       game.rules ? h('div', {}, rulesButton(game.rules)) : null,
     ),
-    h(
-      'div',
-      { class: 'field' },
-      h(
-        'label',
-        { for: 'nickname', class: 'field-label' },
-        '닉네임',
-        h('span', { class: 'hint' }, '이 게임에서만 써요'),
-      ),
-      nickInput,
-    ),
+    h('div', { class: 'field' }, h('label', { for: 'nickname', class: 'field-label' }, '닉네임'), nickInput),
     inviteCode
       ? h('div', { class: 'stack' }, h('p', { class: 'muted' }, `초대받은 방 ${inviteCode}`), joinForm)
       : h(
@@ -151,7 +141,7 @@ export function renderLobby(
     error,
     h('p', { class: 'hint' }, '가입 없이 이 브라우저에 닉네임만 저장합니다. 빈자리는 봇이 채웁니다.'),
   );
-  queueMicrotask(() => (inviteCode && savedNickname(game.id) ? joinBtn : nickInput).focus());
+  queueMicrotask(() => (inviteCode && savedNickname() ? joinBtn : nickInput).focus());
   return page;
 }
 

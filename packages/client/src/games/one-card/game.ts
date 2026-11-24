@@ -54,7 +54,15 @@ export function mountOneCardGame(root: HTMLElement, session: OneCardSession, onE
     '넘기기',
   );
   const actions = h('div', { class: 'oc-actions' }, drawBtn, passBtn);
-  const mine = h('section', { class: 'oc-mine' }, hand, actions);
+  // 내 패 장수 (폰에서 겹친 카드만으로는 세기 어렵다)
+  const myCount = h('span', { class: 'oc-my-count', 'data-testid': 'my-count', 'aria-live': 'polite' });
+  const handHead = h(
+    'div',
+    { class: 'oc-hand-head' },
+    h('span', { class: 'oc-hand-title' }, '내 패'),
+    myCount,
+  );
+  const mine = h('section', { class: 'oc-mine' }, handHead, hand, actions);
 
   const callBtn = h('button', {
     class: 'oc-call',
@@ -265,8 +273,14 @@ export function mountOneCardGame(root: HTMLElement, session: OneCardSession, onE
     if (!m || m.seat < 0 || snap.role === 'spectator') {
       hand.replaceChildren(h('p', { class: 'hint oc-watch' }, '관전 중이에요'));
       actions.hidden = true;
+      handHead.hidden = true;
       return;
     }
+    handHead.hidden = false;
+    const count = snap.hand.length;
+    myCount.textContent = count === 1 ? '1장 남음!' : `${count}장`;
+    myCount.classList.toggle('one', count === 1);
+    myCount.classList.toggle('many', count >= 15);
     actions.hidden = false;
     const cards = [...snap.hand];
     const width = Math.max(240, hand.clientWidth || 328);

@@ -109,9 +109,9 @@ async function boot(): Promise<void> {
     showLobby(game, null, '초대 링크의 방 코드가 올바르지 않습니다.');
     return;
   }
-  const nickname = savedNickname(game.id);
+  const nickname = savedNickname();
   if (nickname) {
-    // 초대 링크 + 이 게임에서 저장한 닉네임 → 바로 입장 (재방문·새로고침 포함)
+    // 초대 링크 + 저장한 닉네임 → 바로 입장 (재방문·새로고침 포함)
     mount(
       h('main', { class: 'page narrow centered' }, h('div', { class: 'spinner', 'aria-label': '입장 중' })),
     );
