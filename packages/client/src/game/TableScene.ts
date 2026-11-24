@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import type { DieFace } from '@wmg/rules';
 import type { BidView, PlayerView, RevealView } from '../net.js';
+import { renderScale } from './renderScale.js';
 import { seatPoints } from './seatLayout.js';
 
 /** Phaser 테이블에 넘기는 공개 정보 + 내 주사위. 다른 사람의 눈은 reveal이 온 뒤에만 들어온다 (S-01). */
@@ -124,14 +125,22 @@ export class TableScene extends Phaser.Scene {
   #spots = new Map<string, SeatSpot>();
   #animatedReveal = '';
   #reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  readonly #dpr: number;
 
-  constructor() {
+  /** @param dpr 캔버스 픽셀 배율. 장면 좌표는 CSS 픽셀 단위로 두고 카메라 확대로 맞춘다 */
+  constructor(dpr = 1) {
     super('table');
+    this.#dpr = dpr;
+  }
+
+  /** 장면 좌표계(CSS 픽셀)의 폭과 높이 */
+  get #view(): { width: number; height: number } {
+    return { width: this.scale.width / this.#dpr, height: this.scale.height / this.#dpr };
   }
 
   create(): void {
     this.#palette = readPalette();
-    this.cameras.main.setBackgroundColor(this.#palette.surface);
+    this.cameras.main.setOrigin(0, 0).setZoom(this.#dpr).setBackgroundColor(this.#palette.surface);
     this.#layer = this.add.container(0, 0);
     this.#timer = this.add.graphics();
     this.scale.on('resize', () => this.#redraw());
@@ -168,7 +177,7 @@ export class TableScene extends Phaser.Scene {
     this.#layer.removeAll(true);
     this.#spots.clear();
     if (!m) return;
-    const { width: W, height: H } = this.scale;
+    const { width: W, height: H } = this.#view;
     const seated = m.players.filter((x) => !x.spectator).sort((a, b) => a.seat - b.seat);
     const toneIndex = new Map(seated.map((p, i) => [p.id, i]));
     const meIndex = seated.findIndex((x) => x.id === m.me);
@@ -214,7 +223,7 @@ export class TableScene extends Phaser.Scene {
       align: 'center',
     });
     t.setOrigin(0.5, 0.5);
-    t.setResolution(Math.min(3, window.devicePixelRatio || 1));
+    t.setResolution(this.#dpr);
     // 캔버스는 줄바꿈이 없으므로 폭을 넘으면 말줄임한다. 전체 이름은 DOM(결과 화면, 스크린리더 요약)에 있다
     if (maxWidth > 0 && t.width > maxWidth) {
       const chars = [...text];
@@ -406,7 +415,7 @@ export class TableScene extends Phaser.Scene {
           compact ? 15 : 17,
           p.css.ink2,
           600,
-          this.scale.width * 0.6,
+          this.#view.width * 0.6,
         );
       } else if (m.phase === 'STARTING') {
         this.#text(cx, cy, '곧 시작합니다', compact ? 18 : 22, p.css.accent, 800);
@@ -437,7 +446,7 @@ export class TableScene extends Phaser.Scene {
       .map((b) => `${b.quantity}×${b.face}`)
       .join('  ·  ');
     if (trail)
-      this.#text(cx, cy + cardH / 2 + 18, trail, compact ? 12 : 13, p.css.ink3, 600, this.scale.width - 32);
+      this.#text(cx, cy + cardH / 2 + 18, trail, compact ? 12 : 13, p.css.ink3, 600, this.#view.width - 32);
   }
 
   #drawMine(W: number, H: number, m: TableModel, compact: boolean, animate: boolean): void {
@@ -502,16 +511,30 @@ export async function mountTable(parent: HTMLElement): Promise<{ scene: TableSce
     document.fonts.load('600 16px "Pretendard Variable"', '가나다123'),
     document.fonts.load('800 32px "Pretendard Variable"', '가나다123'),
   ]).catch(() => undefined);
-  const scene = new TableScene();
+  // 캔버스 픽셀은 CSS 크기 × 배율로 만들고, Scale Manager의 zoom(1/배율)으로 CSS 크기에 맞춰 보여 준다.
+  // RESIZE 모드는 캔버스를 CSS 크기(1배)로만 만들어서 고해상도 화면에서 글자와 도형이 흐릿했다
+  const dpr = renderScale(window.devicePixelRatio);
+  const pixels = () =>
+    [Math.max(1, parent.clientWidth) * dpr, Math.max(1, parent.clientHeight) * dpr] as const;
+  const [width, height] = pixels();
+  const scene = new TableScene(dpr);
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
     transparent: false,
     banner: false,
-    scale: { mode: Phaser.Scale.RESIZE, width: parent.clientWidth, height: parent.clientHeight },
+    scale: { mode: Phaser.Scale.NONE, width, height, zoom: 1 / dpr },
     render: { antialias: true, roundPixels: false },
     scene,
   });
   await new Promise<void>((resolve) => game.events.once(Phaser.Core.Events.READY, () => resolve()));
-  return { scene, destroy: () => game.destroy(true) };
+  const observer = new ResizeObserver(() => game.scale.resize(...pixels()));
+  observer.observe(parent);
+  return {
+    scene,
+    destroy: () => {
+      observer.disconnect();
+      game.destroy(true);
+    },
+  };
 }
