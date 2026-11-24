@@ -43,6 +43,9 @@ export const ERROR_CODES = [
   'INVALID_MOVE',
   'OCCUPIED',
   'FORBIDDEN_MOVE',
+  // 원카드 내기 거부 (one-card.md CE-02~CE-04)
+  'INVALID_CARD',
+  'INVALID_SUIT',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

@@ -7,10 +7,11 @@ import {
   type Presence,
 } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
-import { GAME_ID, gomoku } from '@wmg/rules';
+import { GAME_ID, gomoku, oneCard } from '@wmg/rules';
 import type { ServerConfig } from './config.js';
 import { LiarsDiceRoom } from './games/liars-dice/LiarsDiceRoom.js';
 import { GomokuRoom } from './games/gomoku/GomokuRoom.js';
+import { OneCardRoom } from './games/one-card/OneCardRoom.js';
 import { activeRooms, runtime } from './games/liars-dice/runtime.js';
 
 export interface CreateServerOptions {
@@ -44,6 +45,7 @@ export function createGameServer({ config, presence, driver }: CreateServerOptio
     rooms: {
       [GAME_ID]: defineRoom(LiarsDiceRoom),
       [gomoku.GOMOKU_ROOM_TYPE]: defineRoom(GomokuRoom),
+      [oneCard.ONE_CARD_ROOM_TYPE]: defineRoom(OneCardRoom),
     },
     routes: createRouter({ healthz }),
     transport: new WebSocketTransport({ pingInterval: 10_000, pingMaxRetries: 3 }),
