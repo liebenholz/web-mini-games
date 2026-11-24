@@ -57,11 +57,17 @@ function linkPreviews(): Plugin {
           html.slice(tail);
         this.emitFile({ type: 'asset', fileName: `${game.id}.html`, source });
       }
-      // Cloudflare Pages 주소 규칙. <게임>.html은 Pages가 /<게임>으로 바로 내준다 (정적 파일이 규칙보다 먼저).
-      // 그 아래 주소(초대 링크)와 기존 /r/<코드>는 /<게임>으로 다시 쓴다. 폴더(<게임>/index.html)로 두면
-      // Pages가 /<게임>/로 308 리다이렉트를 걸어 규칙과 꼬였다
+      // Cloudflare Pages 주소 규칙 (wrangler pages dev로 확인). /<게임>은 Pages가 <게임>.html을 바로 내준다.
+      // - 그 아래 주소(초대 링크)와 기존 /r/<코드>는 확장자 없는 /<게임>으로 다시 쓴다.
+      //   대상에 .html을 쓰면 Pages가 /<게임>으로 308을 보내 초대 코드가 주소에서 사라진다.
+      // - 나머지는 /index.html. 대상이 정확히 파일일 때만 JS·이미지 같은 정적 파일이 규칙보다 먼저 나간다
+      //   (/* / 200 으로 쓰면 정적 파일까지 메인 HTML로 바뀌었다)
       const available = CATALOG.filter((g) => g.status === 'available');
-      const rules = [...available.map((g) => `/${g.id}/* /${g.id} 200`), '/r/* /liars-dice 200', '/* / 200'];
+      const rules = [
+        ...available.map((g) => `/${g.id}/* /${g.id} 200`),
+        '/r/* /liars-dice 200',
+        '/* /index.html 200',
+      ];
       this.emitFile({ type: 'asset', fileName: '_redirects', source: `${rules.join('\n')}\n` });
     },
   };
