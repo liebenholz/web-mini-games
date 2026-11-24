@@ -25,7 +25,7 @@ export interface BullsPlayerView {
 export interface BullsOptionsView {
   readonly digits: bulls.Digits;
   readonly maxAttempts: bulls.MaxAttempts;
-  readonly turnSeconds: 15 | 30 | 60;
+  readonly turnSeconds: bulls.BullsTurnSeconds;
   readonly fillWithBots: boolean;
   readonly isPrivate: boolean;
 }

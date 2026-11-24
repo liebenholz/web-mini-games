@@ -10,8 +10,8 @@ async function startVsBot(page: Page) {
   await expect(page.getByTestId('fixed-rules')).toContainText('3자리 1S 2B · OUT / 4자리 1B 2C · 0B 0C');
   // 시간 배율 때문에 비밀 숫자 60초가 3초로 줄어서, 턴을 길게 해 두면 입력할 여유가 생긴다
   const turn = page.getByRole('group', { name: '턴 제한(초) · 넘기면 그 턴을 넘겨요' });
-  await turn.getByRole('button', { name: '60' }).click();
-  await expect(turn.getByRole('button', { name: '60' })).toHaveAttribute('aria-pressed', 'true');
+  await turn.getByRole('button', { name: '90' }).click();
+  await expect(turn.getByRole('button', { name: '90' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: '게임 시작' }).click();
   await expect(page.getByTestId('secret-slots')).toBeVisible({ timeout: 15_000 });
 }
