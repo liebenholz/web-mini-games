@@ -5,7 +5,7 @@ import { CATALOG, SITE } from './src/games/catalog.js';
 
 /**
  * 링크 미리보기 (Open Graph). 카카오톡·디스코드는 스크립트를 실행하지 않아서 주소마다 HTML에 직접 적어야 한다.
- * 메인은 index.html, 게임은 <게임>/index.html을 만들어 제목과 설명만 바꾼다.
+ * 메인은 index.html, 게임은 <게임>.html을 만들어 제목과 설명만 바꾼다.
  * 이미지는 절대 주소여야 해서 배포할 때 SITE_URL(예: https://wmg-play.pages.dev)을 넘긴다.
  */
 function linkPreviews(): Plugin {
@@ -55,11 +55,11 @@ function linkPreviews(): Plugin {
             `/${game.id}`,
           ) +
           html.slice(tail);
-        this.emitFile({ type: 'asset', fileName: `${game.id}/index.html`, source });
+        this.emitFile({ type: 'asset', fileName: `${game.id}.html`, source });
       }
-      // Cloudflare Pages 주소 규칙: 게임 주소는 게임 HTML로, 기존 /r/<코드> 초대 링크는 거짓말쟁이 주사위로, 나머지는 메인.
-      // 대상에 .html을 쓰면 Pages가 확장자 없는 주소로 다시 보내면서 규칙이 무시되므로 폴더 주소(/<게임>)를 쓴다.
-      // /<게임> 자체는 Pages가 <게임>/index.html을 바로 내주므로 규칙이 필요 없다
+      // Cloudflare Pages 주소 규칙. <게임>.html은 Pages가 /<게임>으로 바로 내준다 (정적 파일이 규칙보다 먼저).
+      // 그 아래 주소(초대 링크)와 기존 /r/<코드>는 /<게임>으로 다시 쓴다. 폴더(<게임>/index.html)로 두면
+      // Pages가 /<게임>/로 308 리다이렉트를 걸어 규칙과 꼬였다
       const available = CATALOG.filter((g) => g.status === 'available');
       const rules = [...available.map((g) => `/${g.id}/* /${g.id} 200`), '/r/* /liars-dice 200', '/* / 200'];
       this.emitFile({ type: 'asset', fileName: '_redirects', source: `${rules.join('\n')}\n` });
