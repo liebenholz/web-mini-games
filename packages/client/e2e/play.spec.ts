@@ -210,7 +210,7 @@ test('E-15: 방장이 참가자를 추방하면 확인 후 내보내고, 그 사
   await friend.close();
 });
 
-test('Phase 2 M1: 메인은 게임만 고르고, 세 게임 모두 들어갈 수 있다', async ({ page }) => {
+test('Phase 2 M1: 메인은 게임만 고르고, 모든 게임에 들어갈 수 있다', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle('WMG · Web Multiplayer Ground');
   await expect(page.getByRole('heading', { name: 'Web Multiplayer Ground' })).toBeVisible();
@@ -222,7 +222,7 @@ test('Phase 2 M1: 메인은 게임만 고르고, 세 게임 모두 들어갈 수
   const dice = page.getByTestId('game-liars-dice');
   await expect(dice).toContainText('내 주사위를 단서로 거짓말을 잡아내요');
   // Phase 2 M3: 준비 중인 게임이 없다 (준비 중 처리는 routes 단위 테스트가 검사한다)
-  for (const id of ['liars-dice', 'gomoku', 'one-card']) {
+  for (const id of ['liars-dice', 'gomoku', 'one-card', 'bulls-and-cows']) {
     const card = page.getByTestId(`game-${id}`);
     await expect(card).not.toContainText('준비 중');
     await expect(card.getByRole('button', { name: /하러 가기$/ })).toBeVisible();
@@ -256,7 +256,7 @@ test('닉네임은 모든 게임이 같이 쓴다 (ADR 0002 개정)', async ({ p
   await page.getByRole('button', { name: '방 만들기' }).click();
   await expect(page.getByTestId('room-code')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('wmg.nickname'))).toBe('공용닉네임');
-  for (const game of ['gomoku', 'one-card']) {
+  for (const game of ['gomoku', 'one-card', 'bulls-and-cows']) {
     await page.goto(`/${game}`);
     await expect(page.locator('#nickname')).toHaveValue('공용닉네임');
   }

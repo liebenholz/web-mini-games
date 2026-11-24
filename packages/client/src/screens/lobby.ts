@@ -1,7 +1,7 @@
 import { NICKNAME_MAX, normalizeNickname, normalizeRoomCode } from '@wmg/rules';
 import { h, svg } from '../dom.js';
 import type { GameInfo } from '../games/registry.js';
-import { boardStonesSvg, cardTileSvg, dieSvg, icons } from '../icons.js';
+import { boardStonesSvg, cardTileSvg, dieSvg, icons, textTileSvg } from '../icons.js';
 import type { GameSession } from '../games/flow.js';
 import { describeError, JoinError } from '../net.js';
 import { saveNickname, savedNickname } from '../identity.js';
@@ -149,5 +149,6 @@ export function renderLobby(
 export function heroIcons(game: Pick<GameInfo, 'category'>): string[] {
   if (game.category === 'board') return [1, 2, 3, 4, 5].map(boardStonesSvg);
   if (game.category === 'card') return ['♠', '♥', '◆', '♣', '★'].map(cardTileSvg);
+  if (game.category === 'number') return ['1', '2', '3', 'S', 'B'].map(textTileSvg);
   return [1, 3, 3, 5, 6].map((f) => dieSvg(f));
 }

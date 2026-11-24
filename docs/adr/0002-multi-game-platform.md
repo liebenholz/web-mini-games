@@ -32,12 +32,13 @@ Phase 1은 거짓말쟁이 주사위 하나를 전제로 만들었다 (첫 화�
 | `tagline`  | 내 주사위를 단서로 거짓말을 잡아내요      |
 | `players`  | 2~6명                                     |
 | `minutes`  | 5~10분                                    |
-| `category` | `dice` / `card` / `board`                 |
+| `category` | `dice` / `card` / `board` / `number`      |
 | `status`   | `available` / `coming-soon`               |
 | `rules`    | 규칙 시트 내용 (게임 모듈에서 불러옴)     |
 
 - **코드가 없는 게임은 `coming-soon`**이다. 메인에 카드는 보이지만 누를 수 없고 규칙 보기도 없다. 오목과 원카드는 구현되는 마일스톤에서 `available`로 바꾼다.
-- `category`는 Phase 3의 카테고리 → 게임 계층 화면에서 쓴다. 지금은 화면에 쓰지 않는다.
+- `category`는 Phase 3의 카테고리 → 게임 계층 화면에서 쓴다. 지금은 메인 카드 아이콘과 로비 장식만 정한다.
+- `number`(숫자 게임)는 숫자야구를 넣으며 추가했다 (2026-11-25). 주사위·카드·보드 어디에도 맞지 않아서다.
 
 ### 3. 닉네임과 게스트 ID
 
