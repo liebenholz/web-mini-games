@@ -75,21 +75,20 @@ test('360px: 패가 많아도 카드마다 누를 수 있는 자리가 남는다
     if (await pass.isVisible().catch(() => false)) await pass.click({ timeout: 300 }).catch(() => undefined);
     await page.waitForTimeout(80);
   }
-  const cards = hand.locator('.oc-hand-card');
-  const n = await cards.count();
-  expect(n).toBeGreaterThanOrEqual(8);
-  // 각 카드의 왼쪽 가장자리 근처를 누르면 그 카드가 잡힌다 (다음 카드에 완전히 가려지지 않음)
-  for (let i = 0; i < n; i += 1) {
-    const box = await cards.nth(i).boundingBox();
-    if (!box) throw new Error('no box');
-    expect(box.x).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width).toBeLessThanOrEqual(360);
-    const hit = await page.evaluate(
-      ([x, y]) =>
-        (document.elementFromPoint(x as number, y as number)?.closest('[data-card]') as HTMLElement | null)
-          ?.dataset.card ?? null,
-      [box.x + 4, box.y + box.height - 12],
-    );
-    expect(hit).toBe(await cards.nth(i).getAttribute('data-card'));
+  // 봇이 계속 두어 패가 다시 그려질 수 있으므로, 위치 측정과 누르기 검사를 페이지 안에서 한 번에 한다
+  const report = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-testid=oc-hand] .oc-hand-card')];
+    return cards.map((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + 4, r.bottom - 12)?.closest<HTMLElement>('.oc-hand-card');
+      return { card: el.dataset.card, left: r.left, right: r.right, hit: hit?.dataset.card ?? null };
+    });
+  });
+  expect(report.length).toBeGreaterThanOrEqual(8);
+  for (const c of report) {
+    expect(c.left).toBeGreaterThanOrEqual(0);
+    expect(c.right).toBeLessThanOrEqual(360);
+    // 각 카드의 왼쪽 가장자리 근처를 누르면 그 카드가 잡힌다 (다음 카드에 완전히 가려지지 않음)
+    expect(c.hit, c.card).toBe(c.card);
   }
 });
