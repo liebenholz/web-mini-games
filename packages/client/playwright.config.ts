@@ -15,7 +15,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${CLIENT_PORT}`,
     trace: 'retain-on-failure',
-    // 로컬에 설치된 Chrome을 쓰려면 PW_CHANNEL=chrome (CI는 playwright install로 받은 Chromium)
+    // 설치된 Chrome을 쓰려면 PW_CHANNEL=chrome (CI는 러너 이미지의 Chrome을 이렇게 쓴다)
     ...(process.env.PW_CHANNEL ? { channel: process.env.PW_CHANNEL } : {}),
   },
   projects: [
