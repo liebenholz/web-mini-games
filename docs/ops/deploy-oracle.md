@@ -48,17 +48,25 @@ Oracle은 **두 군데**를 모두 열어야 한다.
    - TCP 22 ← 처음 설정하는 동안만 **내 IP/32**로 둔다. 6단계를 마치면 지운다
 2. **VM 안의 iptables** (Oracle Ubuntu 이미지는 기본으로 22번 외에는 막혀 있다)
 
+INPUT 체인에 "나머지 전부 거부(REJECT)" 규칙이 있어서, 허용 규칙은 반드시 그 **앞**에 넣어야 한다. REJECT의 위치는 이미지마다 다르므로 번호를 찾아서 넣는다.
+
 ```bash
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+R=$(sudo iptables -L INPUT --line-numbers -n | awk '/REJECT/{print $1; exit}')
+sudo iptables -I INPUT "$R" -m state --state NEW -p tcp --dport 443 -j ACCEPT
+sudo iptables -I INPUT "$R" -m state --state NEW -p tcp --dport 80 -j ACCEPT
 sudo netfilter-persistent save
+sudo iptables -L INPUT --line-numbers -n   # 80과 443이 REJECT보다 위에 있어야 한다
 ```
 
 iptables의 22번 허용은 그대로 둔다 (tailnet으로 들어오는 SSH가 쓴다). 인터넷에서의 22번은 VCN 규칙으로 막는다. PostgreSQL(5432)과 Redis(6379)는 어디에도 열지 않는다.
 
 ## 4. VM 초기 설정
 
-관리용 SSH로 접속해 Docker를 설치한다 (공식 저장소, arm64 지원).
+관리용 SSH로 접속해 Docker를 설치한다 (공식 저장소, arm64 지원). Ubuntu 이미지의 기본 사용자는 `ubuntu`다.
+
+```bash
+ssh -i <관리용 개인키> ubuntu@<VM 공인 IP>
+```
 
 ```bash
 sudo apt-get update && sudo apt-get install -y ca-certificates curl
@@ -74,7 +82,10 @@ sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli container
 sudo adduser --disabled-password --gecos "" deploy
 sudo usermod -aG docker deploy
 sudo -u deploy mkdir -p /home/deploy/.ssh /home/deploy/wmg/infra/caddy
+sudo chmod 700 /home/deploy/.ssh
 ```
+
+`chmod 700`을 빼먹으면 안 된다. 기본 umask로 만들면 `.ssh`가 775가 되는데, SSH 서버는 다른 사용자가 쓸 수 있는 `.ssh`의 키를 무시해서 배포 키 로그인이 거부된다.
 
 로컬에서 배포 전용 키를 만들고, 공개키(`wmg_deploy.pub`)를 VM의 `/home/deploy/.ssh/authorized_keys`에 넣는다 (권한 600, 소유자 deploy).
 
@@ -172,6 +183,15 @@ SPA 라우팅(`/r/:code`)과 보안 헤더는 `packages/client/public/_redirects
 
 Settings → Secrets and variables → Actions
 
+웹 화면에 붙여 넣으면 값 끝에 줄바꿈이 섞이기 쉽다. 그러면 `DEPLOY_SSH_HOST` 같은 값이 깨져서 배포의 Tailscale ping 단계가 `usage: tailscale ping <hostname-or-IP>`로 실패한다. 짧은 값은 `--body`로, 파일은 입력 리다이렉트로 넣는다.
+
+```bash
+gh secret set DEPLOY_SSH_HOST --repo <owner>/web-mini-games --body "wmg-server"
+gh secret set DEPLOY_SSH_USER --repo <owner>/web-mini-games --body "deploy"
+gh secret set DEPLOY_SSH_KEY --repo <owner>/web-mini-games < ~/.ssh/wmg_deploy
+ssh-keyscan -t ed25519 wmg-server 2>/dev/null | gh secret set DEPLOY_SSH_KNOWN_HOSTS --repo <owner>/web-mini-games
+```
+
 | 종류     | 이름                     | 값                                                                     |
 | -------- | ------------------------ | ---------------------------------------------------------------------- |
 | Secret   | `TS_OAUTH_CLIENT_ID`     | 5-3단계 Client ID                                                      |
@@ -185,7 +205,7 @@ Settings → Secrets and variables → Actions
 | Variable | `CF_PAGES_PROJECT`       | `wmg-play`                                                             |
 | Variable | `VITE_SERVER_URL`        | `wss://api.<도메인>`                                                   |
 
-`CF_PAGES_PROJECT`를 등록하는 순간부터 `main` 머지 때 클라이언트가 배포된다 (등록 전에는 배포 작업을 건너뛴다).
+`CF_PAGES_PROJECT`를 등록하는 순간부터 `main` 머지 때 클라이언트가 배포된다 (등록 전에는 배포 작업을 건너뛴다). 변수를 바꾼 뒤 바로 다시 배포하려면 Actions → deploy-client → **Run workflow**(main)를 누른다.
 
 추가로:
 
