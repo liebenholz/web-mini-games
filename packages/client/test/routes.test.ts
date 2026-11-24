@@ -3,12 +3,28 @@ import { CATALOG } from '../src/games/catalog.js';
 import type { GameInfo } from '../src/games/registry.js';
 import { invitePath, lobbyPath, parseRoute } from '../src/routes.js';
 
-const games: GameInfo[] = CATALOG.map((g) => ({
-  ...g,
-  roomType: g.status === 'available' ? g.id : null,
-  rules: null,
-  flow: null,
-}));
+const games: GameInfo[] = [
+  ...CATALOG.map((g) => ({
+    ...g,
+    roomType: g.status === 'available' ? g.id : null,
+    rules: null,
+    flow: null,
+  })),
+  // 지금 카탈로그에는 준비 중인 게임이 없다. 준비 중 처리를 계속 검사하려고 가짜 항목을 둔다
+  {
+    id: 'number-baseball',
+    name: '숫자야구',
+    tagline: '',
+    lead: '',
+    players: '2명',
+    minutes: '5분',
+    category: 'board' as const,
+    status: 'coming-soon' as const,
+    roomType: null,
+    rules: null,
+    flow: null,
+  },
+];
 const route = (path: string) => parseRoute(path, games, 'liars-dice');
 
 describe('주소 체계 (ADR 0002)', () => {
@@ -43,8 +59,9 @@ describe('주소 체계 (ADR 0002)', () => {
 
   it('준비 중인 게임은 로비와 초대 링크 모두 coming-soon', () => {
     expect(route('/gomoku').kind).toBe('lobby');
-    expect(route('/one-card').kind).toBe('coming-soon');
-    expect(route('/one-card/r/ABC234').kind).toBe('coming-soon');
+    expect(route('/one-card').kind).toBe('lobby');
+    expect(route('/number-baseball').kind).toBe('coming-soon');
+    expect(route('/number-baseball/r/ABC234').kind).toBe('coming-soon');
   });
 
   it('없는 게임이나 이상한 경로는 not-found', () => {

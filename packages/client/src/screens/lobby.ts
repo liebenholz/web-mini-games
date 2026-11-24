@@ -1,7 +1,7 @@
 import { NICKNAME_MAX, normalizeNickname, normalizeRoomCode } from '@wmg/rules';
 import { h, svg } from '../dom.js';
 import type { GameInfo } from '../games/registry.js';
-import { boardStonesSvg, dieSvg, icons } from '../icons.js';
+import { boardStonesSvg, cardTileSvg, dieSvg, icons } from '../icons.js';
 import type { GameSession } from '../games/flow.js';
 import { describeError, JoinError } from '../net.js';
 import { saveNickname, savedNickname } from '../identity.js';
@@ -101,7 +101,7 @@ export function renderLobby(
   buttons.push(createBtn, joinBtn, quickBtn);
 
   const dice = h('div', { class: 'lobby-dice', 'aria-hidden': 'true' });
-  // 파스텔 장식 다섯 개: 판 게임은 판 위 돌 1→5개, 나머지는 주사위
+  // 파스텔 장식 다섯 개: 판 게임은 판 위 돌 1→5개, 카드 게임은 카드 모양, 나머지는 주사위
   heroIcons(game).forEach((icon, i) => {
     dice.append(h('span', { class: `pip-die tone-${i + 1}` }, svg(icon)));
   });
@@ -158,5 +158,6 @@ export function renderLobby(
 /** 로비 머리 장식 아이콘 (게임 종류별) */
 export function heroIcons(game: Pick<GameInfo, 'category'>): string[] {
   if (game.category === 'board') return [1, 2, 3, 4, 5].map(boardStonesSvg);
+  if (game.category === 'card') return ['♠', '♥', '◆', '♣', '★'].map(cardTileSvg);
   return [1, 3, 3, 5, 6].map((f) => dieSvg(f));
 }
