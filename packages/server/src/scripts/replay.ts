@@ -16,11 +16,12 @@ const pool = new pg.Pool({ connectionString: url });
 try {
   const arg = process.argv[2];
   const game = arg
-    ? await pool.query<{ id: string; options: RoomOptions }>('SELECT id, options FROM games WHERE id = $1', [
-        arg,
-      ])
+    ? await pool.query<{ id: string; options: RoomOptions }>(
+        "SELECT id, options FROM games WHERE id = $1 AND game_type = 'liars_dice'",
+        [arg],
+      )
     : await pool.query<{ id: string; options: RoomOptions }>(
-        'SELECT id, options FROM games ORDER BY ended_at DESC LIMIT 1',
+        "SELECT id, options FROM games WHERE game_type = 'liars_dice' ORDER BY ended_at DESC LIMIT 1",
       );
   const row = game.rows[0];
   if (!row) throw new Error('game not found');

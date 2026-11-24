@@ -26,7 +26,10 @@ export interface GomokuIO {
 }
 
 export interface GomokuRecord {
+  readonly gameId: string;
   readonly roomCode: string;
+  readonly startedAt: Date;
+  readonly endedAt: Date;
   readonly options: Options;
   readonly players: readonly {
     readonly playerId: string;
@@ -99,6 +102,8 @@ export class GomokuMatch {
   readonly #kicked = new Set<string>();
   #board: gomoku.Cell[] = gomoku.emptyBoard();
   #moves: { color: Color; x: number; y: number; isBot: boolean }[] = [];
+  #gameId = '';
+  #startedAt = new Date(0);
   #turnColor: Color = 'black';
   #turnId = '';
   #cancelTurn: (() => void) | null = null;
@@ -337,6 +342,8 @@ export class GomokuMatch {
     white.color = 'white';
     white.view.color = 'white';
 
+    this.#gameId = this.#rng.id();
+    this.#startedAt = new Date(this.#scheduler.now());
     this.#board = gomoku.emptyBoard();
     for (let i = 0; i < gomoku.GOMOKU_CELLS; i += 1) this.state.board[i] = gomoku.EMPTY;
     this.#moves = [];
@@ -457,7 +464,10 @@ export class GomokuMatch {
       line: line.map((p) => ({ x: p.x, y: p.y })),
     });
     this.#io.onFinished?.({
+      gameId: this.#gameId,
       roomCode: this.state.roomCode,
+      startedAt: this.#startedAt,
+      endedAt: new Date(this.#scheduler.now()),
       options: this.#options,
       players: this.#seated()
         .filter((m) => m.color !== null)

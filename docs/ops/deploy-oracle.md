@@ -250,6 +250,21 @@ curl -s https://api.<도메인>/healthz
 - **롤백:** tailnet에서 VM에 접속해 `SERVER_IMAGE=ghcr.io/<owner>/web-mini-games/server:v0.1.0 docker compose up -d server`.
 - **로그:** `docker compose logs -f server` (JSON 한 줄 로그)
 - **백업:** `pgdata` 볼륨. 주기적으로 `pg_dump`를 Object Storage(무료 한도)에 올리는 작업은 아직 없다.
+- **판 통계 (읽기 전용 조회):** VM의 `infra` 폴더에서
+  ```bash
+  docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+  ```
+  ```sql
+  -- 게임별 최근 7일 판 수
+  SELECT game_type, count(*) FROM games WHERE ended_at > now() - interval '7 days' GROUP BY 1;
+  -- 오목: 끝난 이유별 판 수, 평균 수
+  SELECT end_reason, count(*), round(avg((summary->>'moveCount')::int)) AS avg_moves
+    FROM games WHERE game_type = 'gomoku' GROUP BY 1;
+  -- 오목: 금수(3-3) 설정별 흑 승률
+  SELECT options->>'forbidDoubleThree' AS forbid_33,
+         round(avg(CASE WHEN summary->>'winnerColor' = 'black' THEN 1 ELSE 0 END), 2) AS black_win
+    FROM games WHERE game_type = 'gomoku' AND end_reason <> 'draw' GROUP BY 1;
+  ```
 - **보안 업데이트:** `sudo apt-get install unattended-upgrades`로 OS 보안 패치를 자동 적용한다.
 - **운영 서버에 SSH로 들어가 코드를 고치지 않는다** (CLAUDE.md). 변경은 PR과 태그로만 한다.
 

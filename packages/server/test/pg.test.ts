@@ -2,6 +2,8 @@ import pg from 'pg';
 import { afterAll, describe, expect, it } from 'vitest';
 import { migrate, PgRecorder } from '../src/persistence/pgRecorder.js';
 import { replayGame } from '../src/persistence/replay.js';
+import { gomoku } from '@wmg/rules';
+import { toGomokuSummary } from '../src/games/gomoku/record.js';
 import { startHumans } from './helpers.js';
 
 /** TEST_DATABASE_URL이 있을 때만 실행한다 (CI의 postgres 서비스 또는 로컬 docker) */
@@ -15,7 +17,7 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
     await pool.query(
       'DROP TABLE IF EXISTS bids, rounds, game_players, games, players, schema_migrations CASCADE',
     );
-    expect(await migrate(pool)).toEqual(['001_init']);
+    expect(await migrate(pool)).toEqual(['001_init', '002_game_type_summary']);
     expect(await migrate(pool)).toEqual([]);
 
     const { scheduler, io } = startHumans(3, { startingDice: 3 }, 11);
@@ -73,6 +75,51 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
       })),
     });
     expect(replay.problems).toEqual([]);
+  });
+
+  it('ADR 0002: 기존 판은 liars_dice, 오목은 판 요약 한 줄과 참가자 2명이 남는다', async () => {
+    const types = await pool.query('SELECT DISTINCT game_type FROM games');
+    expect(types.rows.map((r) => r.game_type)).toEqual(['liars_dice']);
+
+    const summary = toGomokuSummary({
+      gameId: '00000000-0000-4000-8000-0000000000aa',
+      roomCode: 'GMKABC',
+      startedAt: new Date('2026-11-24T00:00:00Z'),
+      endedAt: new Date('2026-11-24T00:05:00Z'),
+      options: gomoku.DEFAULT_GOMOKU_OPTIONS,
+      players: [
+        { playerId: 'a', guestId: 'guest-gomoku-black', nickname: '흑돌', color: 'black', isBot: false },
+        { playerId: 'b', guestId: null, nickname: '봇', color: 'white', isBot: true },
+      ],
+      moves: [{ color: 'black', x: 7, y: 7, isBot: false }],
+      result: 'five',
+      winnerColor: 'black',
+    });
+    const recorder = new PgRecorder({ connectionString: url!, log: () => {} });
+    await recorder.saveSummary(summary);
+    await recorder.saveSummary(summary); // 재시도로 두 번 와도 한 줄
+    await recorder.close();
+
+    const game = await pool.query('SELECT game_type, end_reason, summary, options FROM games WHERE id = $1', [
+      summary.gameId,
+    ]);
+    expect(game.rows).toHaveLength(1);
+    expect(game.rows[0].game_type).toBe('gomoku');
+    expect(game.rows[0].end_reason).toBe('five');
+    expect(game.rows[0].summary).toMatchObject({ result: 'five', moveCount: 1, hasBot: true });
+    expect(game.rows[0].options).toMatchObject({
+      forbidDoubleThree: true,
+      forbidDoubleFour: true,
+      forbidOverline: true,
+    });
+    const seats = await pool.query(
+      'SELECT seat, player_id, is_bot, final_rank FROM game_players WHERE game_id = $1 ORDER BY seat',
+      [summary.gameId],
+    );
+    expect(seats.rows).toEqual([
+      { seat: 0, player_id: 'guest-gomoku-black', is_bot: false, final_rank: 1 },
+      { seat: 1, player_id: null, is_bot: true, final_rank: 2 },
+    ]);
   });
 });
 

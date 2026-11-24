@@ -56,4 +56,14 @@ CREATE TABLE bids (
 );
 `,
   },
+  {
+    // ADR 0002: 여러 게임의 판을 같은 games 테이블에 둔다. 기존 기록은 거짓말쟁이 주사위다.
+    // summary: 게임별 판 요약 (오목: 결과, 승자 색, 수 개수, 금수 설정, 봇 여부). 수 순서는 저장하지 않는다
+    id: '002_game_type_summary',
+    sql: `
+ALTER TABLE games ADD COLUMN game_type text NOT NULL DEFAULT 'liars_dice';
+ALTER TABLE games ADD COLUMN summary jsonb;
+CREATE INDEX games_type_ended_idx ON games (game_type, ended_at DESC);
+`,
+  },
 ];

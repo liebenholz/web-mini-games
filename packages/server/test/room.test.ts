@@ -354,6 +354,21 @@ describe('GomokuRoom 통합 (Phase 2 M2)', () => {
     expect(state.result).toBe('five');
     expect(state.board[7 * 15 + 7]).toBe(1);
     expect(has(guestSpy, 'game_over')).toBe(true);
+    // ADR 0002: 판 요약 한 줄 (수 순서는 저장하지 않음)
+    await waitFor(() => recorder.summaries.length === 1);
+    const summary = recorder.summaries[0]!;
+    expect(summary.gameType).toBe('gomoku');
+    expect(summary.endReason).toBe('five');
+    expect(summary.summary).toMatchObject({
+      result: 'five',
+      winnerColor: 'black',
+      moveCount: 9,
+      hasBot: false,
+    });
+    expect(summary.players.map((p) => [p.seat, p.nickname, p.finalRank])).toEqual([
+      [0, '방장', 1],
+      [1, '손님', 2],
+    ]);
   });
 
   it('G-22: 게임 중 나가면 상대가 player_replaced(left)를 받는다', async () => {
