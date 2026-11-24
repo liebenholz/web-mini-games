@@ -77,3 +77,27 @@ export function dieSvg(face: number, label = `${face}`): string {
     .join('');
   return `<svg viewBox="0 0 24 24" role="img" aria-label="${label}"><rect x="2.5" y="2.5" width="19" height="19" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/>${pips}</svg>`;
 }
+
+/** 판 위 돌 놓는 자리 (가운데 → 대각선 네 귀) */
+const STONE_SPOTS: readonly (readonly [number, number])[] = [
+  [12, 12],
+  [8, 8],
+  [16, 16],
+  [16, 8],
+  [8, 16],
+];
+
+/**
+ * 오목 로비 장식: 3×3 판에 돌 count개 (1~5). 흑과 백을 번갈아 놓는다.
+ * 흑은 currentColor, 백은 흰 바탕 + currentColor 테두리
+ */
+export function boardStonesSvg(count: number): string {
+  const stones = STONE_SPOTS.slice(0, count)
+    .map(([x, y], i) =>
+      i % 2 === 0
+        ? `<circle cx="${x}" cy="${y}" r="2.6" fill="currentColor"/>`
+        : `<circle cx="${x}" cy="${y}" r="2.1" fill="#fff" stroke="currentColor" stroke-width="1.2"/>`,
+    )
+    .join('');
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v16M12 4v16M16 4v16M4 8h16M4 12h16M4 16h16" stroke="currentColor" stroke-width="0.9" opacity="0.55"/>${stones}</svg>`;
+}
