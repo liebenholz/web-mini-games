@@ -36,8 +36,9 @@
    METRICS_INTERVAL_SECONDS=10
    ```
    ```bash
-   cd ~/wmg/infra && docker compose up -d server
+   cd ~/wmg/infra && SERVER_IMAGE=ghcr.io/<owner>/web-mini-games/server:<지금 배포된 태그> docker compose up -d server
    ```
+   `SERVER_IMAGE`는 `.env`에 없고 배포할 때 CI가 붙여 넘긴다. 빼먹으면 로컬 빌드용 이름(`wmg-server:local`)을 받으려다 실패한다. 이 경우 서버는 바뀌지 않으니 이름을 붙여 다시 실행하면 된다. 지금 태그는 `docker compose ps server`의 IMAGE 열에서 본다.
 4. **VM에서 따로 보기 (선택):** 다른 터미널에서 `docker stats`를 띄워 컨테이너 메모리와 Postgres CPU를 본다.
 
 ## 3. 실행 (Mac)
@@ -82,7 +83,7 @@ pnpm --filter server loadtest -- --url wss://api.<도메인> --stages 10,25,50,1
    COMMIT;
    ```
    부하용 접속은 `/visit`를 보내지 않으므로 방문자 수에는 들어가지 않는다.
-2. **지표 간격 되돌리기:** `.env`에서 `METRICS_INTERVAL_SECONDS` 줄을 지우고 `docker compose up -d server`.
+2. **지표 간격 되돌리기:** `.env`에서 `METRICS_INTERVAL_SECONDS` 줄을 지우고 2장 3번과 같은 명령(`SERVER_IMAGE=… docker compose up -d server`)으로 다시 띄운다.
 3. **확인:** `/healthz`, `/stats`(1분 캐시)가 테스트 전 숫자로 돌아왔는지 본다.
 4. **보고서:** 결과 파일로 `docs/reports/load-test-YYYYMMDD.md`를 쓴다. 단계별 방 수, 접속 수, 메모리, CPU, 이벤트 루프 p99, 초당 메시지, 입장 지연, 오류, 멈춘 이유, 병목과 개선 항목.
 
