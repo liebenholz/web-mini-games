@@ -8,11 +8,19 @@
 
 name: wmg
 
+# 로그가 디스크를 채우지 않도록 서비스마다 10MB × 5개까지만 남긴다 (오래된 것부터 지운다)
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
 services:
   server:
     # 운영: deploy-server.yml이 ghcr.io/<owner>/web-mini-games/server:<tag> 를 넣는다
     image: ${SERVER_IMAGE:-wmg-server:local}
     restart: unless-stopped
+    logging: *logging
     environment:
       NODE_ENV: production
       PORT: '2567'
@@ -21,6 +29,9 @@ services:
       REDIS_URL: redis://redis:6379
       SHUTDOWN_DRAIN_SECONDS: ${SHUTDOWN_DRAIN_SECONDS:-900}
       ALONE_WITH_BOTS_POLICY: ${ALONE_WITH_BOTS_POLICY:-continue}
+      # 비우면 /metrics는 닫혀 있고, 지표는 로그로만 남는다
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      METRICS_INTERVAL_SECONDS: ${METRICS_INTERVAL_SECONDS:-60}
     # 진행 중인 판이 끝날 때까지 기다린다 (SHUTDOWN_DRAIN_SECONDS보다 조금 길게)
     stop_grace_period: 16m
     depends_on:
@@ -36,6 +47,7 @@ services:
           memory: 8g
 
   postgres:
+    logging: *logging
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
@@ -53,6 +65,7 @@ services:
     networks: [internal]
 
   redis:
+    logging: *logging
     image: redis:7-alpine
     restart: unless-stopped
     command:
@@ -75,6 +88,7 @@ services:
     networks: [internal]
 
   caddy:
+    logging: *logging
     image: caddy:2-alpine
     restart: unless-stopped
     environment:
