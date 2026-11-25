@@ -42,7 +42,8 @@ function configureCors(origins: readonly string[]): void {
 export function createGameServer({ config, presence, driver, stats, metrics }: CreateServerOptions) {
   configureCors(config.corsOrigins);
 
-  const healthz = createEndpoint('/healthz', { method: 'GET' }, async () => ({
+  // 외부 감시 서비스(무료 플랜)는 HEAD로만 확인하므로 HEAD도 받는다 (운영 가이드 15-1)
+  const healthz = createEndpoint('/healthz', { method: ['GET', 'HEAD'] }, async () => ({
     status: runtime.draining ? 'draining' : 'ok',
     rooms: activeRooms.size,
     inProgress: [...activeRooms].filter((r) => r.inProgress).length,
