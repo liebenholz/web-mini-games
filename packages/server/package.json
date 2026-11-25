@@ -11,7 +11,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "db:migrate": "node dist/scripts/migrate.js",
-    "replay": "tsx --conditions=source src/scripts/replay.ts"
+    "replay": "tsx --conditions=source src/scripts/replay.ts",
+    "loadtest": "tsx --conditions=source loadtest/run.ts"
   },
   "dependencies": {
     "@colyseus/core": "^0.18.29",

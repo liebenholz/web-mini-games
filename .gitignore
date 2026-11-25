@@ -74,3 +74,6 @@ CLAUDE.local.md
 *~
 .DS_Store
 Thumbs.db
+
+# 부하 테스트 결과 (docs/ops/load-test.md). 보고서만 docs/reports에 남긴다
+loadtest-*.json
