@@ -314,7 +314,8 @@ curl -s -H "Authorization: Bearer $METRICS_TOKEN" https://api.<도메인>/metric
 ```
 
 - 토큰은 24자 이상이어야 서버가 시작한다. 저장소, 이슈, 채팅에 붙이지 않는다.
-- 부하 테스트 때는 `.env`에 `METRICS_INTERVAL_SECONDS=10`을 넣고 `docker compose up -d server`로 간격을 줄인다. 끝나면 지운다.
+- `.env`를 바꾼 뒤에는 `SERVER_IMAGE=ghcr.io/<owner>/web-mini-games/server:<지금 태그> docker compose up -d server`로 다시 띄운다. `SERVER_IMAGE`는 `.env`에 없어서 빼먹으면 `wmg-server:local`을 받으려다 실패한다 (서버는 그대로 유지된다).
+- 부하 테스트 절차는 `docs/ops/load-test.md`에 있다.
 
 ## 16. 백업과 복구
 
