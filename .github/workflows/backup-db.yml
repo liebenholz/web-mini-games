@@ -1,0 +1,83 @@
+name: backup-db
+
+# 매일 한국 시간 05:00에 운영 PostgreSQL을 덤프해 암호화한 뒤 Actions 아티팩트로 30일 보관한다.
+# 저장소가 퍼블릭이라 아티팩트는 누구나 받을 수 있다. 그래서 평문은 러너 디스크에도 남기지 않고
+# VM에서 나오는 덤프를 바로 age 공개키로 암호화한다. 복호화 개인키는 운영자만 가진다.
+# 필요한 값 (🙋 절차는 docs/ops/deploy-oracle.md 16장):
+#   vars.BACKUP_AGE_RECIPIENT   (age 공개키, age1…)
+#   secrets.TS_OAUTH_CLIENT_ID, secrets.TS_OAUTH_SECRET, secrets.DEPLOY_SSH_* (deploy-server와 같다)
+
+on:
+  schedule:
+    - cron: '0 20 * * *' # UTC 20:00 = KST 05:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-db
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check recipient
+        env:
+          RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: |
+          if [[ ! "$RECIPIENT" =~ ^age1[0-9a-z]{58}$ ]]; then
+            echo "::error::vars.BACKUP_AGE_RECIPIENT must be an age public key (age1...)"
+            exit 1
+          fi
+      - name: Install age
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+      # deploy-server와 같은 방식으로 일회용 노드가 tailnet에 들어온다
+      - name: Join tailnet
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ secrets.DEPLOY_SSH_HOST }}
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Dump and encrypt
+        id: dump
+        env:
+          HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          USER: ${{ secrets.DEPLOY_SSH_USER }}
+          RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          name="wmg-db-$(TZ=Asia/Seoul date +%Y%m%d-%H%M)"
+          # custom 형식은 압축돼 있고 pg_restore로 테이블 단위 복구도 된다. 평문은 파이프로만 지나간다
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" \
+            "cd ~/wmg/infra && docker compose exec -T postgres sh -c 'pg_dump -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" --format=custom'" \
+            | age -r "$RECIPIENT" -o "$name.dump.age"
+          size=$(stat -c %s "$name.dump.age")
+          echo "encrypted dump: $name.dump.age ($size bytes)"
+          # 빈 DB라도 스키마만으로 수 KB는 된다. 그보다 작으면 덤프가 잘못된 것이다
+          if (( size < 2048 )); then
+            echo "::error::dump is too small ($size bytes)"
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.dump.outputs.name }}
+          path: ${{ steps.dump.outputs.name }}.dump.age
+          retention-days: 30
+          if-no-files-found: error
+          # 이미 압축·암호화돼 있어 다시 압축하지 않는다
+          compression-level: 0

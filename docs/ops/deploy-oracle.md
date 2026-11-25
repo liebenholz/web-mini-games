@@ -251,7 +251,7 @@ curl -s https://api.<도메인>/healthz
 - **업데이트:** 새 태그(`v0.1.1`)를 올린다. 서버는 종료 신호를 받으면 새 방을 막고 진행 중인 판이 끝날 때까지(최대 15분) 기다린 뒤 교체된다. 그동안 새 방은 만들 수 없다.
 - **롤백:** tailnet에서 VM에 접속해 `SERVER_IMAGE=ghcr.io/<owner>/web-mini-games/server:v0.1.0 docker compose up -d server`.
 - **로그:** `docker compose logs -f server` (JSON 한 줄 로그). 서비스마다 10MB × 5개까지만 남긴다 (`docker-compose.yml`의 `x-logging`)
-- **백업:** `pgdata` 볼륨. 주기적으로 `pg_dump`를 Object Storage(무료 한도)에 올리는 작업은 아직 없다.
+- **백업:** 매일 한국 시간 05:00에 `backup-db` 워크플로가 암호화한 덤프를 30일 보관한다 (16장).
 - **판 통계 (읽기 전용 조회):** VM의 `infra` 폴더에서
   ```bash
   docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
@@ -315,6 +315,65 @@ curl -s -H "Authorization: Bearer $METRICS_TOKEN" https://api.<도메인>/metric
 
 - 토큰은 24자 이상이어야 서버가 시작한다. 저장소, 이슈, 채팅에 붙이지 않는다.
 - 부하 테스트 때는 `.env`에 `METRICS_INTERVAL_SECONDS=10`을 넣고 `docker compose up -d server`로 간격을 줄인다. 끝나면 지운다.
+
+## 16. 백업과 복구
+
+`.github/workflows/backup-db.yml`이 매일 한국 시간 05:00에 돈다.
+
+1. tailnet으로 VM에 접속해 `pg_dump --format=custom`을 받는다.
+2. 받은 덤프를 러너 디스크에 쓰기 전에 age 공개키로 암호화한다.
+3. 암호화한 파일을 Actions 아티팩트 `wmg-db-<날짜-시각>`으로 30일 보관한다.
+
+저장소가 퍼블릭이라 아티팩트는 누구나 받을 수 있다. 그래서 반드시 암호화하고, 복호화 개인키는 운영자만 가진다.
+
+### 16-1. 처음 설정 🙋
+
+노트북에서 age 키 한 쌍을 만든다 (macOS: `brew install age`).
+
+```bash
+age-keygen -o wmg-backup-key.txt
+```
+
+- 출력의 `Public key: age1…`을 저장소 변수로 넣는다 (비밀값이 아니라 변수다):
+  ```bash
+  gh variable set BACKUP_AGE_RECIPIENT --body 'age1…'
+  ```
+- `wmg-backup-key.txt`(개인키)는 비밀번호 관리자 등 **저장소 밖 두 곳**에 보관하고 노트북의 원본은 지운다. 잃어버리면 백업을 열 수 없다.
+- Actions → backup-db → **Run workflow**로 한 번 돌려 성공하는지 본다.
+
+### 16-2. 실패 알림
+
+- 예약 실행이 실패하면 GitHub이 메일을 보낸다 (Settings → Notifications → Actions에서 켜져 있어야 한다).
+- 퍼블릭 저장소에서 60일 동안 커밋이 없으면 GitHub이 예약 워크플로를 멈춘다. 그때는 Actions 화면에서 다시 켠다.
+
+### 16-3. 복구 연습 (로컬)
+
+백업이 실제로 열리는지 가끔 노트북에서 확인한다. 운영 DB는 건드리지 않는다.
+
+```bash
+gh run download -n wmg-db-<날짜-시각>        # 최근 실행: gh run list -w backup-db
+age -d -i wmg-backup-key.txt -o wmg.dump wmg-db-<날짜-시각>.dump.age
+docker run --rm -d --name wmg-restore -e POSTGRES_PASSWORD=x postgres:17-alpine
+docker cp wmg.dump wmg-restore:/tmp/wmg.dump
+docker exec wmg-restore pg_restore -U postgres -d postgres --no-owner /tmp/wmg.dump
+docker exec wmg-restore psql -U postgres -c "select game_type, count(*) from games group by 1"
+docker rm -f wmg-restore && rm wmg.dump
+```
+
+### 16-4. 운영 복구 🙋
+
+운영 DB를 잃었을 때만 한다. 복구하면 백업 이후의 기록은 사라진다.
+
+1. 위처럼 복호화한 `wmg.dump`를 tailnet으로 VM에 올린다: `scp wmg.dump deploy@wmg-server:~/wmg/`
+2. VM에서 서버를 멈추고 복구한 뒤 다시 켠다:
+   ```bash
+   cd ~/wmg/infra
+   docker compose stop server
+   docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner' < ../wmg.dump
+   docker compose start server
+   rm ../wmg.dump
+   ```
+3. `/healthz`와 `/stats`로 확인한다.
 
 ## 부록 A. 도메인 없이 먼저 띄워 보기
 
