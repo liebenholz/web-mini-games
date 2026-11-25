@@ -66,4 +66,15 @@ ALTER TABLE games ADD COLUMN summary jsonb;
 CREATE INDEX games_type_ended_idx ON games (game_type, ended_at DESC);
 `,
   },
+  {
+    // docs/specs/stats.md ST-01: 날짜(한국 시간)마다 사이트를 연 게스트. 게스트 ID 대신 해시만 둔다
+    id: '003_daily_visitors',
+    sql: `
+CREATE TABLE daily_visitors (
+  day         date NOT NULL,
+  guest_hash  text NOT NULL,
+  PRIMARY KEY (day, guest_hash)
+);
+`,
+  },
 ];

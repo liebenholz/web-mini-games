@@ -8,6 +8,8 @@ import { describeError, JoinError } from './net.js';
 import { invitePath, lobbyPath, parseRoute } from './routes.js';
 import { renderHub } from './screens/hub.js';
 import { renderLobby } from './screens/lobby.js';
+import { renderStats } from './screens/stats.js';
+import { fetchStats, recordVisit } from './statsApi.js';
 
 /**
  * 라우트 (ADR 0002): / 메인(게임 선택), /<게임> 로비, /<게임>/r/<코드> 초대 링크, /r/<코드> 이전 초대 링크.
@@ -60,6 +62,14 @@ function showLobby(game: GameInfo, code: string | null = null, notice: string | 
   );
 }
 
+function showStats(): void {
+  teardown?.();
+  document.title = `통계 · ${SITE.name}`;
+  const view = renderStats({ load: fetchStats, back: () => navigate('/') });
+  teardown = view.dispose;
+  mount(view.node);
+}
+
 function exitToLobby(game: GameInfo, notice: string | null = null): void {
   const s = session;
   session = null;
@@ -88,6 +98,9 @@ async function boot(): Promise<void> {
   switch (route.kind) {
     case 'hub':
       showHub();
+      return;
+    case 'stats':
+      showStats();
       return;
     case 'not-found':
       history.replaceState(null, '', '/');
@@ -135,5 +148,8 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible' || session) return;
   if (parseRoute(location.pathname, GAMES, LEGACY_GAME_ID).kind === 'invite') void boot();
 });
+
+// ST-01: 하루 한 번 방문을 알린다. 통계 화면만 연 것은 세지 않는다
+if (parseRoute(location.pathname, GAMES, LEGACY_GAME_ID).kind !== 'stats') recordVisit();
 
 void boot().catch(() => toast(describeError('NETWORK')));
