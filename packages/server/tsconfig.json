@@ -6,5 +6,5 @@
     "noEmit": true,
     "customConditions": ["source"]
   },
-  "include": ["src", "test", "scripts", "vitest.config.ts"]
+  "include": ["src", "test", "scripts", "loadtest", "vitest.config.ts"]
 }
