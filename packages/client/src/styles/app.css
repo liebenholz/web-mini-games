@@ -3028,3 +3028,181 @@ button.game-main:focus-visible,
 .rules-gap {
   margin-top: var(--space-3);
 }
+
+/* ───── 통계 대시보드 /stats (docs/specs/stats.md) ───── */
+.stats-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.stats-head .stack {
+  gap: var(--space-1);
+}
+
+.stats-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.stats-body > .spinner {
+  align-self: center;
+  margin: var(--space-7) 0;
+}
+
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+@media (min-width: 720px) {
+  .stat-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.stat-label {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+.chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-legend strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.chart-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.chart-readout {
+  /* 날짜를 바꿔도 그래프가 위아래로 움직이지 않게 두 줄 자리를 잡는다 */
+  min-height: 3em;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.chart-plot {
+  width: 100%;
+  min-height: 200px;
+  touch-action: pan-y;
+}
+
+.chart-svg {
+  display: block;
+  cursor: crosshair;
+}
+
+.chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.chart-tick {
+  fill: var(--ink-3);
+  font-size: 11px;
+  font-family: var(--font-ui);
+}
+
+.chart-focus {
+  fill: var(--surface-2);
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart-dot {
+  fill: var(--bg);
+  stroke-width: 2.5;
+}
+
+.chart-table summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chart-table-scroll {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.chart-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.chart-table th,
+.chart-table td {
+  padding: 6px var(--space-2);
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.chart-table th:first-child {
+  text-align: left;
+}
+
+.chart-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  color: var(--ink-2);
+}

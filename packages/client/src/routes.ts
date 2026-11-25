@@ -7,9 +7,11 @@ import type { GameInfo } from './games/registry.js';
  *   /<게임>                게임 로비
  *   /<게임>/r/<방 코드>    초대 링크
  *   /r/<방 코드>           Phase 1 초대 링크 → 거짓말쟁이 주사위
+ *   /stats                 운영 통계 (docs/specs/stats.md)
  */
 export type Route =
   | { readonly kind: 'hub' }
+  | { readonly kind: 'stats' }
   | { readonly kind: 'lobby'; readonly game: GameInfo }
   /** code가 null이면 링크의 방 코드가 올바르지 않다 */
   | { readonly kind: 'invite'; readonly game: GameInfo; readonly code: string | null }
@@ -28,6 +30,7 @@ export function parseRoute(pathname: string, games: readonly GameInfo[], legacyG
       }
     });
   if (parts.length === 0) return { kind: 'hub' };
+  if (parts[0] === 'stats' && parts.length === 1) return { kind: 'stats' };
 
   const code = (raw: string | undefined) => normalizeRoomCode(raw ?? '');
   const legacy = games.find((g) => g.id === legacyGameId);
@@ -42,6 +45,8 @@ export function parseRoute(pathname: string, games: readonly GameInfo[], legacyG
   if (game.status !== 'available') return { kind: 'coming-soon', game };
   return isLobby ? { kind: 'lobby', game } : { kind: 'invite', game, code: code(parts[2]) };
 }
+
+export const STATS_PATH = '/stats';
 
 export function lobbyPath(game: Pick<GameInfo, 'id'>): string {
   return `/${game.id}`;

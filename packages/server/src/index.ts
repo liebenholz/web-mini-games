@@ -5,6 +5,7 @@ import { ConfigError, loadConfig } from './config.js';
 import { DEFAULT_TIMING } from './games/liars-dice/LiarsDiceMatch.js';
 import { activeRooms, configureLiarsDice, runtime } from './games/liars-dice/runtime.js';
 import { migrate, PgRecorder } from './persistence/pgRecorder.js';
+import { MemoryStats, PgStatsStore, StatsService } from './stats/stats.js';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -21,6 +22,7 @@ async function main(): Promise<void> {
   });
 
   let recorder: PgRecorder | null = null;
+  let stats: StatsService;
   if (config.databaseUrl) {
     recorder = new PgRecorder({ connectionString: config.databaseUrl, log: runtime.log });
     try {
@@ -33,12 +35,18 @@ async function main(): Promise<void> {
       });
     }
     configureLiarsDice({ recorder });
+    stats = new StatsService(new PgStatsStore(recorder.pool), { log: runtime.log });
   } else {
     runtime.log('warn', 'DATABASE_URL not set; game records are not stored');
+    // 개발·E2E: 통계만 메모리에 센다 (재시작하면 사라진다)
+    const memory = new MemoryStats();
+    configureLiarsDice({ recorder: memory });
+    stats = new StatsService(memory, { log: runtime.log });
   }
 
   const server = createGameServer({
     config,
+    stats,
     ...(config.redisUrl
       ? { presence: new RedisPresence(config.redisUrl), driver: new RedisDriver(config.redisUrl) }
       : {}),

@@ -5,6 +5,7 @@ import { replayGame } from '../src/persistence/replay.js';
 import { gomoku } from '@wmg/rules';
 import { toGomokuSummary } from '../src/games/gomoku/record.js';
 import { startHumans } from './helpers.js';
+import { PgStatsStore } from '../src/stats/stats.js';
 
 /** TEST_DATABASE_URL이 있을 때만 실행한다 (CI의 postgres 서비스 또는 로컬 docker) */
 const url = process.env.TEST_DATABASE_URL;
@@ -15,9 +16,9 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
 
   it('한 판이 끝나면 5개 테이블에 기록이 남고, 저장된 값으로 재현된다', async () => {
     await pool.query(
-      'DROP TABLE IF EXISTS bids, rounds, game_players, games, players, schema_migrations CASCADE',
+      'DROP TABLE IF EXISTS daily_visitors, bids, rounds, game_players, games, players, schema_migrations CASCADE',
     );
-    expect(await migrate(pool)).toEqual(['001_init', '002_game_type_summary']);
+    expect(await migrate(pool)).toEqual(['001_init', '002_game_type_summary', '003_daily_visitors']);
     expect(await migrate(pool)).toEqual([]);
 
     const { scheduler, io } = startHumans(3, { startingDice: 3 }, 11);
@@ -120,6 +121,17 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
       { seat: 0, player_id: 'guest-gomoku-black', is_bot: false, final_rank: 1 },
       { seat: 1, player_id: null, is_bot: true, final_rank: 2 },
     ]);
+  });
+
+  it('ST-01, ST-02, ST-04: 한국 시간 날짜로 판 수·참여자·방문자를 센다', async () => {
+    const store = new PgStatsStore(pool);
+    // 2026-11-24 00:05Z = 한국 시간 11-24 09:05 (위 오목 판). 같은 게스트가 두 번 와도 방문자 1명
+    await store.addVisit('2026-11-24', 'hash-a');
+    await store.addVisit('2026-11-24', 'hash-a');
+    await store.addVisit('2026-11-24', 'hash-b');
+    const [day23, day24] = await store.daily(['2026-11-23', '2026-11-24']);
+    expect(day23).toEqual({ date: '2026-11-23', visitors: 0, players: 0, games: {} });
+    expect(day24).toEqual({ date: '2026-11-24', visitors: 2, players: 1, games: { gomoku: 1 } });
   });
 });
 
