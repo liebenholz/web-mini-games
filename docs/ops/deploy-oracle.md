@@ -158,6 +158,8 @@ API_DOMAIN=api.<도메인>
 CORS_ORIGINS=https://play.<도메인>
 SHUTDOWN_DRAIN_SECONDS=900
 ALONE_WITH_BOTS_POLICY=continue
+# 운영 지표 /metrics 토큰 (15장). openssl rand -hex 24 로 만든다. 비우면 /metrics는 닫힌다
+METRICS_TOKEN=<긴 무작위 값>
 ```
 
 - `ALLOW_TEST_SEED`, `GAME_TIMING_SCALE`은 넣지 않는다 (운영에서 켜면 서버가 시작을 거부한다).
@@ -248,7 +250,7 @@ curl -s https://api.<도메인>/healthz
 
 - **업데이트:** 새 태그(`v0.1.1`)를 올린다. 서버는 종료 신호를 받으면 새 방을 막고 진행 중인 판이 끝날 때까지(최대 15분) 기다린 뒤 교체된다. 그동안 새 방은 만들 수 없다.
 - **롤백:** tailnet에서 VM에 접속해 `SERVER_IMAGE=ghcr.io/<owner>/web-mini-games/server:v0.1.0 docker compose up -d server`.
-- **로그:** `docker compose logs -f server` (JSON 한 줄 로그)
+- **로그:** `docker compose logs -f server` (JSON 한 줄 로그). 서비스마다 10MB × 5개까지만 남긴다 (`docker-compose.yml`의 `x-logging`)
 - **백업:** `pgdata` 볼륨. 주기적으로 `pg_dump`를 Object Storage(무료 한도)에 올리는 작업은 아직 없다.
 - **판 통계 (읽기 전용 조회):** VM의 `infra` 폴더에서
   ```bash
@@ -267,6 +269,52 @@ curl -s https://api.<도메인>/healthz
   ```
 - **보안 업데이트:** `sudo apt-get install unattended-upgrades`로 OS 보안 패치를 자동 적용한다.
 - **운영 서버에 SSH로 들어가 코드를 고치지 않는다** (CLAUDE.md). 변경은 PR과 태그로만 한다.
+
+## 15. 모니터링
+
+### 15-1. 외부 헬스 체크 🙋
+
+서버가 죽으면 알림을 받는다. 무료 외부 감시 서비스(예: UptimeRobot, Better Stack)에 계정을 만들고 감시 항목 하나를 추가한다.
+
+| 항목   | 값                             |
+| ------ | ------------------------------ |
+| 종류   | HTTP(s) – Keyword              |
+| 주소   | `https://api.<도메인>/healthz` |
+| 키워드 | `"status":"ok"` (있어야 정상)  |
+| 간격   | 5분                            |
+| 알림   | 메일 (원하면 디스코드 웹훅)    |
+
+- 배포 중에는 서버가 `"status":"draining"`을 돌려줘 잠깐 알림이 올 수 있다. 최대 15분이면 돌아온다.
+- 키워드 대신 상태 코드만 보면 Caddy가 대신 응답하는 경우를 놓칠 수 있어 키워드로 본다.
+
+### 15-2. 서버 지표
+
+서버는 `METRICS_INTERVAL_SECONDS`(기본 60초)마다 지표 한 줄을 로그로 남긴다.
+
+```bash
+docker compose logs --since 1h server | grep '"message":"metrics"'
+```
+
+| 필드                                                               | 뜻                                                              |
+| ------------------------------------------------------------------ | --------------------------------------------------------------- |
+| `memoryMb.rss`, `memoryMb.heapUsed`                                | 프로세스 메모리 (컨테이너 한도 8GB)                             |
+| `cpuPercent`                                                       | 코어 1개를 100으로 본 CPU 사용률                                |
+| `eventLoop.p99Ms`, `eventLoop.maxMs`                               | 이벤트 루프 지연. p99가 꾸준히 50ms를 넘으면 서버가 밀리고 있다 |
+| `eventLoop.utilization`                                            | 이벤트 루프가 일한 비율 (0~1)                                   |
+| `rooms.total`, `rooms.inProgress`, `rooms.clients`, `rooms.byGame` | 방 수, 진행 중인 방, 접속 수, 게임별 방 수                      |
+| `window.messagesPerSec`, `window.rateLimited`                      | 간격 동안 초당 클라이언트 메시지, 빈도 제한(E-14)으로 막은 수   |
+| `window.dbRetries`, `window.dbDropped`                             | 판 기록 저장 재시도, 재시도를 다 쓰고 버린 기록                 |
+
+`window.*`는 직전 표본 이후의 변화량이고, `totals.*`는 서버가 켜진 뒤의 누적값이다.
+
+마지막 표본은 HTTP로도 읽는다. `.env`에 `METRICS_TOKEN`이 있어야 열리고, 없으면 503(`METRICS_DISABLED`)이다.
+
+```bash
+curl -s -H "Authorization: Bearer $METRICS_TOKEN" https://api.<도메인>/metrics
+```
+
+- 토큰은 24자 이상이어야 서버가 시작한다. 저장소, 이슈, 채팅에 붙이지 않는다.
+- 부하 테스트 때는 `.env`에 `METRICS_INTERVAL_SECONDS=10`을 넣고 `docker compose up -d server`로 간격을 줄인다. 끝나면 지운다.
 
 ## 부록 A. 도메인 없이 먼저 띄워 보기
 

@@ -11,6 +11,10 @@ export interface ServerConfig {
   readonly alonePolicy: AloneWithBotsPolicy;
   /** 개발·E2E 전용: 턴/연출/봇 지연 시간 배율 (0 < x ≤ 1). 운영에서는 1만 허용 */
   readonly timingScale: number;
+  /** 운영 지표 /metrics를 여는 토큰. 없으면 /metrics는 503 */
+  readonly metricsToken: string | null;
+  /** 운영 지표를 로그로 남기는 간격(초). 0이면 남기지 않는다 */
+  readonly metricsIntervalSeconds: number;
 }
 
 export class ConfigError extends Error {}
@@ -43,8 +47,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   if (!(timingScale > 0 && timingScale <= 1)) throw new ConfigError('GAME_TIMING_SCALE must be in (0, 1]');
   if (nodeEnv === 'production' && timingScale !== 1)
     throw new ConfigError('GAME_TIMING_SCALE is forbidden in production');
+  const metricsToken = env.METRICS_TOKEN || null;
+  if (metricsToken !== null && metricsToken.length < 24)
+    throw new ConfigError('METRICS_TOKEN must be at least 24 characters');
   return {
     nodeEnv,
+    metricsToken,
+    metricsIntervalSeconds: intEnv(env.METRICS_INTERVAL_SECONDS, 60, 'METRICS_INTERVAL_SECONDS'),
     timingScale,
     port: intEnv(env.PORT, 2567, 'PORT'),
     corsOrigins,

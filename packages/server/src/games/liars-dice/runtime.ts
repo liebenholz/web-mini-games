@@ -1,3 +1,4 @@
+import type { ActiveRoom } from '../../metrics/metrics.js';
 import { cryptoRng, type Rng } from '../../framework/rng.js';
 import { noopRecorder, type GameRecorder } from '../../persistence/types.js';
 import { DEFAULT_TIMING, type AloneWithBotsPolicy, type Timing } from './LiarsDiceMatch.js';
@@ -34,5 +35,5 @@ export function configureLiarsDice(patch: Partial<LiarsDiceRuntime>): void {
   Object.assign(runtime, patch);
 }
 
-/** 진행 중인 방 목록 (graceful shutdown 판단용) */
-export const activeRooms = new Set<{ readonly inProgress: boolean }>();
+/** 살아 있는 모든 게임 방 (graceful shutdown 판단, 운영 지표) */
+export const activeRooms = new Set<ActiveRoom>();

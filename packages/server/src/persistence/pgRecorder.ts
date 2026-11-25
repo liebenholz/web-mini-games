@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { MIGRATIONS } from './migrations.js';
+import { counters } from '../metrics/metrics.js';
 import type { GamePlayerRecord, GameRecord, GameRecorder, GameSummaryRecord } from './types.js';
 
 type Log = (level: 'info' | 'warn' | 'error', message: string, extra?: Record<string, unknown>) => void;
@@ -191,6 +192,7 @@ export class PgRecorder implements GameRecorder {
     } catch (error) {
       const delay = this.#delays[attempt];
       if (delay === undefined) {
+        counters.dbDropped += 1;
         this.#log('error', 'game record dropped after retries', {
           gameId: record.gameId,
           record,
@@ -198,6 +200,7 @@ export class PgRecorder implements GameRecorder {
         });
         return;
       }
+      counters.dbRetries += 1;
       this.#log('warn', 'game record save failed, retrying', {
         gameId: record.gameId,
         attempt,

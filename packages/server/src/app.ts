@@ -14,6 +14,7 @@ import { GomokuRoom } from './games/gomoku/GomokuRoom.js';
 import { BullsRoom } from './games/bulls-and-cows/BullsRoom.js';
 import { OneCardRoom } from './games/one-card/OneCardRoom.js';
 import { activeRooms, runtime } from './games/liars-dice/runtime.js';
+import { checkBearer, type MetricsCollector } from './metrics/metrics.js';
 import type { StatsService } from './stats/stats.js';
 
 export interface CreateServerOptions {
@@ -22,6 +23,8 @@ export interface CreateServerOptions {
   readonly driver?: matchMaker.MatchMakerDriver;
   /** docs/specs/stats.md. 없으면 /visit, /stats가 503을 돌려준다 */
   readonly stats?: StatsService;
+  /** 운영 지표. token이 없으면 /metrics는 503 */
+  readonly metrics?: { readonly collector: MetricsCollector; readonly token: string | null };
 }
 
 /** 허용한 Origin에만 매칭 HTTP API를 연다. 목록이 비어 있으면(개발) 모두 허용 */
@@ -36,7 +39,7 @@ function configureCors(origins: readonly string[]): void {
   matchMaker.controller.standardHttpStatus = true;
 }
 
-export function createGameServer({ config, presence, driver, stats }: CreateServerOptions) {
+export function createGameServer({ config, presence, driver, stats, metrics }: CreateServerOptions) {
   configureCors(config.corsOrigins);
 
   const healthz = createEndpoint('/healthz', { method: 'GET' }, async () => ({
@@ -68,6 +71,15 @@ export function createGameServer({ config, presence, driver, stats }: CreateServ
     }
   });
 
+  // 운영 지표 (docs/ops/deploy-oracle.md 15장). 토큰을 아는 사람만 읽는다
+  const metricsEndpoint = createEndpoint('/metrics', { method: 'GET' }, async (ctx) => {
+    if (!metrics?.token) throw ctx.error(503, { code: 'METRICS_DISABLED' });
+    if (!checkBearer(ctx.getHeader('authorization'), metrics.token)) {
+      throw ctx.error(401, { code: 'UNAUTHORIZED' });
+    }
+    return metrics.collector.latest();
+  });
+
   return defineServer({
     rooms: {
       [GAME_ID]: defineRoom(LiarsDiceRoom),
@@ -75,7 +87,7 @@ export function createGameServer({ config, presence, driver, stats }: CreateServ
       [oneCard.ONE_CARD_ROOM_TYPE]: defineRoom(OneCardRoom),
       [bulls.BULLS_ROOM_TYPE]: defineRoom(BullsRoom),
     },
-    routes: createRouter({ healthz, visit, dailyStats }),
+    routes: createRouter({ healthz, visit, dailyStats, metrics: metricsEndpoint }),
     transport: new WebSocketTransport({ pingInterval: 10_000, pingMaxRetries: 3 }),
     ...(presence ? { presence } : {}),
     ...(driver ? { driver } : {}),

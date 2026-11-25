@@ -5,6 +5,7 @@ import { ConfigError, loadConfig } from './config.js';
 import { DEFAULT_TIMING } from './games/liars-dice/LiarsDiceMatch.js';
 import { activeRooms, configureLiarsDice, runtime } from './games/liars-dice/runtime.js';
 import { migrate, PgRecorder } from './persistence/pgRecorder.js';
+import { MetricsCollector } from './metrics/metrics.js';
 import { MemoryStats, PgStatsStore, StatsService } from './stats/stats.js';
 
 async function main(): Promise<void> {
@@ -44,9 +45,16 @@ async function main(): Promise<void> {
     stats = new StatsService(memory, { log: runtime.log });
   }
 
+  // 프로세스 하나에 타이머 하나. 방마다 도는 틱 루프가 아니다 (원칙 7)
+  const collector = new MetricsCollector({ rooms: () => activeRooms });
+  collector.start(config.metricsIntervalSeconds * 1000, (snapshot) =>
+    runtime.log('info', 'metrics', { ...snapshot }),
+  );
+
   const server = createGameServer({
     config,
     stats,
+    metrics: { collector, token: config.metricsToken },
     ...(config.redisUrl
       ? { presence: new RedisPresence(config.redisUrl), driver: new RedisDriver(config.redisUrl) }
       : {}),
@@ -70,6 +78,7 @@ async function main(): Promise<void> {
     });
     await server.gracefullyShutdown(false);
     await recorder?.close();
+    collector.stop();
     process.exit(0);
   };
   process.on('SIGTERM', () => void shutdown('SIGTERM'));

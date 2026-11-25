@@ -3,6 +3,8 @@
  * - 1초 창에서 limit를 넘는 메시지는 무시한다 ('drop')
  * - 위반한 창이 strikeWindowMs 안에 maxStrikes번 쌓이면 연결을 끊는다 ('kick')
  */
+import { counters } from '../metrics/metrics.js';
+
 export type RateDecision = 'allow' | 'drop' | 'kick';
 
 export interface RateLimiterOptions {
@@ -39,7 +41,10 @@ export class RateLimiter {
       this.#buckets.set(key, bucket);
     }
     bucket.count += 1;
+    // 모든 방의 클라이언트 메시지가 여기를 지나므로 운영 지표도 여기서 센다
+    counters.messages += 1;
     if (bucket.count <= this.options.limit) return 'allow';
+    counters.rateLimited += 1;
     if (!bucket.struck) {
       bucket.struck = true;
       bucket.strikes = bucket.strikes.filter((t) => now - t < this.options.strikeWindowMs);
