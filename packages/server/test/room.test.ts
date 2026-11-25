@@ -285,6 +285,12 @@ describe('LiarsDiceRoom 통합 (M2)', () => {
     expect((res.data as { status: string }).status).toBe('ok');
   });
 
+  it('/healthz는 HEAD 요청에도 200이다 (외부 감시 서비스 무료 플랜이 HEAD로만 확인한다)', async () => {
+    const res = await fetch('http://localhost:2568/healthz', { method: 'HEAD' });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('');
+  });
+
   it('완료 기준: 끝난 방은 메모리에 남지 않는다 (20판 연속)', async () => {
     for (let i = 0; i < 20; i += 1) {
       const host = await createRoom({ maxPlayers: 3, startingDice: 3, fillWithBots: true });
