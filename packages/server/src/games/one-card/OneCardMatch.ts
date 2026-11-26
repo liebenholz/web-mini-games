@@ -36,6 +36,7 @@ export interface OneCardRecord {
     readonly rank: number;
     readonly bankrupt: boolean;
     readonly isBot: boolean;
+    readonly replaced: boolean;
   }[];
   readonly turnCount: number;
   readonly maxAttack: number;
@@ -113,6 +114,8 @@ export class OneCardMatch {
   #window: OneCardWindow | null = null;
   #gameId = '';
   #startedAt = new Date(0);
+  /** ST-08: 이번 판에서 봇이 자리를 이어받은 사람 (돌아와도 남긴다) */
+  readonly #replacedIds = new Set<string>();
   #turnCount = 0;
   #maxAttack = 0;
   #penaltyCount = 0;
@@ -236,6 +239,7 @@ export class OneCardMatch {
       m.view.connected = false;
     } else {
       m.present = false;
+      if (!m.originallyBot) this.#replacedIds.add(m.id);
       m.controller = 'bot';
       m.view.isBot = true;
       m.view.replaced = true;
@@ -377,6 +381,7 @@ export class OneCardMatch {
     });
     this.#gameId = this.#rng.id();
     this.#startedAt = new Date(this.#scheduler.now());
+    this.#replacedIds.clear();
     this.#turnCount = 0;
     this.#maxAttack = 0;
     this.#penaltyCount = 0;
@@ -689,6 +694,7 @@ export class OneCardMatch {
         rank: r.rank,
         bankrupt: r.bankrupt,
         isBot: r.p.originallyBot,
+        replaced: this.#replacedIds.has(r.p.id),
       })),
       turnCount: this.#turnCount,
       maxAttack: this.#maxAttack,

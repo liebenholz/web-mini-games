@@ -16,13 +16,14 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
 
   it('한 판이 끝나면 5개 테이블에 기록이 남고, 저장된 값으로 재현된다', async () => {
     await pool.query(
-      'DROP TABLE IF EXISTS daily_client_errors, daily_visitors, bids, rounds, game_players, games, players, schema_migrations CASCADE',
+      'DROP TABLE IF EXISTS daily_abandoned, daily_client_errors, daily_visitors, bids, rounds, game_players, games, players, schema_migrations CASCADE',
     );
     expect(await migrate(pool)).toEqual([
       '001_init',
       '002_game_type_summary',
       '003_daily_visitors',
       '004_daily_client_errors',
+      '005_game_metrics',
     ]);
     expect(await migrate(pool)).toEqual([]);
 
@@ -94,8 +95,15 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
       endedAt: new Date('2026-11-24T00:05:00Z'),
       options: gomoku.DEFAULT_GOMOKU_OPTIONS,
       players: [
-        { playerId: 'a', guestId: 'guest-gomoku-black', nickname: '흑돌', color: 'black', isBot: false },
-        { playerId: 'b', guestId: null, nickname: '봇', color: 'white', isBot: true },
+        {
+          playerId: 'a',
+          guestId: 'guest-gomoku-black',
+          nickname: '흑돌',
+          color: 'black',
+          isBot: false,
+          replaced: true,
+        },
+        { playerId: 'b', guestId: null, nickname: '봇', color: 'white', isBot: true, replaced: false },
       ],
       moves: [{ color: 'black', x: 7, y: 7, isBot: false }],
       result: 'five',
@@ -119,12 +127,12 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
       forbidOverline: true,
     });
     const seats = await pool.query(
-      'SELECT seat, player_id, is_bot, final_rank FROM game_players WHERE game_id = $1 ORDER BY seat',
+      'SELECT seat, player_id, is_bot, final_rank, replaced FROM game_players WHERE game_id = $1 ORDER BY seat',
       [summary.gameId],
     );
     expect(seats.rows).toEqual([
-      { seat: 0, player_id: 'guest-gomoku-black', is_bot: false, final_rank: 1 },
-      { seat: 1, player_id: null, is_bot: true, final_rank: 2 },
+      { seat: 0, player_id: 'guest-gomoku-black', is_bot: false, final_rank: 1, replaced: true },
+      { seat: 1, player_id: null, is_bot: true, final_rank: 2, replaced: false },
     ]);
   });
 
@@ -166,6 +174,22 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
     const [day24] = await store.daily(['2026-11-24']);
     expect(day24?.clientErrors).toEqual({ js_error: 5, reconnect_failed: 1 });
     expect(JSON.stringify(day24)).not.toContain('boom');
+  });
+
+  it('ST-08~ST-10: 게임별 합계를 SQL로 센다 (이탈, 봇, 모두 나간 판, 수)', async () => {
+    const recorder = new PgRecorder({ connectionString: url!, log: () => {} });
+    await recorder.abandoned('gomoku', new Date('2026-11-24T01:00:00Z'));
+    await recorder.abandoned('gomoku', new Date('2026-11-24T02:00:00Z'));
+    await recorder.close();
+    const raw = await new PgStatsStore(pool).gameMetrics('2026-11-24');
+    expect(raw.find((r) => r.gameType === 'gomoku')).toMatchObject({
+      games: 1,
+      minutesSum: 5,
+      replacedGames: 1,
+      botGames: 1,
+      movesSum: 1,
+      abandoned: 2,
+    });
   });
 });
 

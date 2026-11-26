@@ -25,6 +25,7 @@ export function toOneCardSummary(record: OneCardRecord): GameSummaryRecord {
         guestId: p.guestId,
         nickname: p.nickname,
         isBot: p.isBot,
+        replaced: p.replaced,
         finalRank: p.rank,
       })),
   };

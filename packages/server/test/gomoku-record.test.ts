@@ -11,8 +11,15 @@ function record(patch: Partial<GomokuRecord> = {}): GomokuRecord {
     endedAt: new Date(61000),
     options: gomoku.DEFAULT_GOMOKU_OPTIONS,
     players: [
-      { playerId: 'p-w', guestId: 'guest-w', nickname: '백돌', color: 'white', isBot: false },
-      { playerId: 'p-b', guestId: null, nickname: '봇', color: 'black', isBot: true },
+      {
+        playerId: 'p-w',
+        guestId: 'guest-w',
+        nickname: '백돌',
+        color: 'white',
+        isBot: false,
+        replaced: false,
+      },
+      { playerId: 'p-b', guestId: null, nickname: '봇', color: 'black', isBot: true, replaced: false },
     ],
     moves: [
       { color: 'black', x: 7, y: 7, isBot: true },

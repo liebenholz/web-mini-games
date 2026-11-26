@@ -22,6 +22,7 @@ function summary(gameType: string, endedAt: string, guests: (string | null)[]): 
       nickname: `p${seat}`,
       seat,
       isBot: guestId === null,
+      replaced: false,
       finalRank: seat + 1,
     })),
   };
@@ -70,6 +71,7 @@ describe('StatsService', () => {
     const store: StatsStore = {
       addVisit: async (day, hash) => void writes.push(`${day}:${hash}`),
       addClientErrors: async () => {},
+      gameMetrics: async () => [],
       daily: async () => [],
     };
     const s = new StatsService(store, { now: () => now });
@@ -87,6 +89,7 @@ describe('StatsService', () => {
     const store: StatsStore = {
       addVisit: async () => void (writes += 1),
       addClientErrors: async () => {},
+      gameMetrics: async () => [],
       daily: async () => [],
     };
     const s = new StatsService(store, { now: () => now, maxVisitsPerSecond: 3 });
@@ -101,6 +104,7 @@ describe('StatsService', () => {
     const store: StatsStore = {
       addVisit: async () => {},
       addClientErrors: async () => {},
+      gameMetrics: async () => [],
       daily: async (days) => {
         queries += 1;
         return days.map((date) => ({ date, visitors: 0, players: 0, games: {}, clientErrors: {} }));
@@ -122,6 +126,7 @@ describe('StatsService', () => {
     const store: StatsStore = {
       addVisit: async () => {},
       addClientErrors: async () => {},
+      gameMetrics: async () => [],
       daily: async () => {
         if (fail) throw new Error('db down');
         return [];

@@ -1,8 +1,10 @@
 import {
   DEFAULT_STATS_RANGE,
   STATS_RANGES,
+  MIN_GAMES_FOR_RATE,
   totalGames,
   type DailyStats,
+  type GameMetrics,
   type StatsRange,
   type StatsResponse,
 } from '@wmg/rules';
@@ -284,6 +286,72 @@ function tile(label: string, value: number, testId: string): HTMLElement {
   );
 }
 
+/** ST-10: 게임별 지표 이름 */
+const EXTRA_LABELS: Readonly<Record<string, { label: string; kind: 'rate' | 'avg'; unit?: string }>> = {
+  timeoutRate: { label: '시간패', kind: 'rate' },
+  avgMoves: { label: '평균 수', kind: 'avg', unit: '수' },
+  avgAttempts: { label: '평균 시도', kind: 'avg', unit: '번' },
+  drawRate: { label: '무승부', kind: 'rate' },
+  bankruptRate: { label: '파산이 나온 판', kind: 'rate' },
+  avgTurns: { label: '평균 턴', kind: 'avg', unit: '턴' },
+  autoBidRate: { label: '시간 초과로 대신 낸 선언', kind: 'rate' },
+};
+
+const pct = (v: number | null) => (v === null ? '—' : `${Math.round(v * 100)}%`);
+const num = (v: number | null, unit: string) => (v === null ? '—' : `${v.toLocaleString('ko-KR')}${unit}`);
+/** 1분보다 짧으면 초로 보인다 (숫자야구는 몇십 초 만에 끝나기도 한다) */
+const duration = (minutes: number | null) =>
+  minutes === null ? '—' : minutes < 1 ? `${Math.max(1, Math.round(minutes * 60))}초` : num(minutes, '분');
+
+function metricItem(label: string, value: string): HTMLElement {
+  return h('div', { class: 'game-metric-item' }, h('dt', {}, label), h('dd', {}, value));
+}
+
+/** ST-10, ST-11: 게임마다 한 줄. 누르면 그 게임만의 지표를 펼친다 */
+function gameMetricsCard(perGame: readonly GameMetrics[], range: number): HTMLElement {
+  const nameOf = (t: string) => GAMES.find((g) => g.roomType === t)?.name ?? t;
+  const rows = perGame.map((m) =>
+    h(
+      'details',
+      { class: 'game-metric', 'data-testid': `game-metric-${m.gameType}` },
+      h(
+        'summary',
+        {},
+        h('span', { class: 'game-metric-name' }, nameOf(m.gameType)),
+        h(
+          'dl',
+          { class: 'game-metric-grid' },
+          metricItem('판 수', `${m.games.toLocaleString('ko-KR')}판`),
+          metricItem('평균 길이', duration(m.avgMinutes)),
+          metricItem('중간 이탈', pct(m.replacedRate)),
+          metricItem('모두 나감', `${m.abandoned.toLocaleString('ko-KR')}판`),
+        ),
+      ),
+      h(
+        'dl',
+        { class: 'game-metric-grid game-metric-extra' },
+        metricItem('봇 자리가 있던 판', pct(m.botRate)),
+        ...Object.entries(m.extra).map(([key, value]) => {
+          const spec = EXTRA_LABELS[key];
+          if (!spec) return metricItem(key, String(value ?? '—'));
+          return metricItem(spec.label, spec.kind === 'rate' ? pct(value) : num(value, spec.unit ?? ''));
+        }),
+      ),
+    ),
+  );
+  const hasHidden = perGame.some((m) => m.games < MIN_GAMES_FOR_RATE);
+  return h(
+    'section',
+    { class: 'card chart-card', 'data-testid': 'game-metrics' },
+    h('h2', {}, '게임별 요약'),
+    h('p', { class: 'hint' }, `최근 ${range}일 동안 끝난 판 기준. 게임을 누르면 자세히 봅니다.`),
+    ...(rows.length ? rows : [h('p', { class: 'hint chart-empty' }, '이 기간에 끝난 판이 없습니다.')]),
+    ...(hasHidden
+      ? [h('p', { class: 'hint' }, `${MIN_GAMES_FOR_RATE}판보다 적은 게임은 비율을 보여 주지 않습니다 (—).`)]
+      : []),
+  );
+}
+
 function renderData(data: StatsResponse): { nodes: HTMLElement[]; redraw: () => void } {
   const days = data.days;
   const dates = days.map((d) => d.date);
@@ -346,7 +414,7 @@ function renderData(data: StatsResponse): { nodes: HTMLElement[]; redraw: () => 
     tile('오늘 오류', totalErrors(today), 'today-errors'),
   );
   return {
-    nodes: [tiles, visitors.card, played.card, failed.card],
+    nodes: [tiles, visitors.card, played.card, gameMetricsCard(data.perGame, data.range), failed.card],
     redraw: () => {
       visitors.redraw();
       played.redraw();

@@ -164,6 +164,8 @@ export class LiarsDiceMatch {
 
   #gameId = '';
   #startedAt = new Date(0);
+  /** ST-08: 이번 판에서 봇이 자리를 이어받은 사람 (돌아와도 남긴다) */
+  readonly #replacedIds = new Set<string>();
   #roundLog: RoundRecord[] = [];
   #bidLog: BidRecord[] = [];
   #disposed = false;
@@ -287,6 +289,7 @@ export class LiarsDiceMatch {
       m.view.connected = false;
     } else {
       m.present = false;
+      if (!m.originallyBot) this.#replacedIds.add(m.id);
       m.controller = 'bot';
       m.view.isBot = true;
       m.view.autopilot = false;
@@ -468,6 +471,7 @@ export class LiarsDiceMatch {
     );
     this.#gameId = this.#rng.id();
     this.#startedAt = new Date(this.#scheduler.now());
+    this.#replacedIds.clear();
     this.#roundLog = [];
     this.#bidLog = [];
     this.state.roundNo = 0;
@@ -688,6 +692,7 @@ export class LiarsDiceMatch {
         nickname: member.nickname,
         seat: member.seat,
         isBot: member.originallyBot,
+        replaced: this.#replacedIds.has(member.id),
         finalRank: rank,
       })),
       rounds: this.#roundLog,

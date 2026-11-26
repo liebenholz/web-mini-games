@@ -94,4 +94,17 @@ CREATE TABLE daily_client_errors (
 );
 `,
   },
+  {
+    // docs/specs/stats.md ST-08, ST-09: 게임 중 봇이 이어받은 자리, 사람이 모두 나가 기록 없이 끝난 판의 개수
+    id: '005_game_metrics',
+    sql: `
+ALTER TABLE game_players ADD COLUMN replaced boolean NOT NULL DEFAULT false;
+CREATE TABLE daily_abandoned (
+  day        date NOT NULL,
+  game_type  text NOT NULL,
+  count      integer NOT NULL,
+  PRIMARY KEY (day, game_type)
+);
+`,
+  },
 ];

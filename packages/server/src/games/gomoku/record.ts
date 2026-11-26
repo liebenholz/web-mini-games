@@ -29,6 +29,7 @@ export function toGomokuSummary(record: GomokuRecord): GameSummaryRecord {
         guestId: p.guestId,
         nickname: p.nickname,
         isBot: p.isBot,
+        replaced: p.replaced,
         finalRank: record.winnerColor === null || record.winnerColor === p.color ? 1 : 2,
       })),
   };

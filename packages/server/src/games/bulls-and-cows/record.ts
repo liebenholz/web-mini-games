@@ -27,6 +27,7 @@ export function toBullsSummary(record: BullsRecord): GameSummaryRecord {
       guestId: p.guestId,
       nickname: p.nickname,
       isBot: p.isBot,
+      replaced: p.replaced,
       finalRank: record.winnerSeat === null || record.winnerSeat === p.seat ? 1 : 2,
     })),
   };
