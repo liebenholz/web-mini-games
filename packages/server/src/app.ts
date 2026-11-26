@@ -15,6 +15,7 @@ import { BullsRoom } from './games/bulls-and-cows/BullsRoom.js';
 import { OneCardRoom } from './games/one-card/OneCardRoom.js';
 import { activeRooms, runtime } from './games/liars-dice/runtime.js';
 import { checkBearer, type MetricsCollector } from './metrics/metrics.js';
+import type { ClientErrorService } from './stats/clientErrors.js';
 import type { StatsService } from './stats/stats.js';
 
 export interface CreateServerOptions {
@@ -25,6 +26,8 @@ export interface CreateServerOptions {
   readonly stats?: StatsService;
   /** 운영 지표. token이 없으면 /metrics는 503 */
   readonly metrics?: { readonly collector: MetricsCollector; readonly token: string | null };
+  /** docs/specs/client-errors.md. 없으면 /client-error가 503 */
+  readonly clientErrors?: ClientErrorService;
 }
 
 /** 허용한 Origin에만 매칭 HTTP API를 연다. 목록이 비어 있으면(개발) 모두 허용 */
@@ -39,7 +42,14 @@ function configureCors(origins: readonly string[]): void {
   matchMaker.controller.standardHttpStatus = true;
 }
 
-export function createGameServer({ config, presence, driver, stats, metrics }: CreateServerOptions) {
+export function createGameServer({
+  config,
+  presence,
+  driver,
+  stats,
+  metrics,
+  clientErrors,
+}: CreateServerOptions) {
   configureCors(config.corsOrigins);
 
   // 외부 감시 서비스(무료 플랜)는 HEAD로만 확인하므로 HEAD도 받는다 (운영 가이드 15-1)
@@ -72,6 +82,13 @@ export function createGameServer({ config, presence, driver, stats, metrics }: C
     }
   });
 
+  // CE-05: 브라우저 오류 보고. 본문은 ClientErrorReport (docs/specs/client-errors.md)
+  const clientError = createEndpoint('/client-error', { method: 'POST' }, async (ctx) => {
+    if (!clientErrors) throw ctx.error(503, { code: 'CLIENT_ERRORS_UNAVAILABLE' });
+    if (!clientErrors.report(ctx.body)) throw ctx.error(400, { code: 'INVALID_REPORT' });
+    return { ok: true };
+  });
+
   // 운영 지표 (docs/ops/deploy-oracle.md 15장). 토큰을 아는 사람만 읽는다
   const metricsEndpoint = createEndpoint('/metrics', { method: 'GET' }, async (ctx) => {
     if (!metrics?.token) throw ctx.error(503, { code: 'METRICS_DISABLED' });
@@ -88,7 +105,7 @@ export function createGameServer({ config, presence, driver, stats, metrics }: C
       [oneCard.ONE_CARD_ROOM_TYPE]: defineRoom(OneCardRoom),
       [bulls.BULLS_ROOM_TYPE]: defineRoom(BullsRoom),
     },
-    routes: createRouter({ healthz, visit, dailyStats, metrics: metricsEndpoint }),
+    routes: createRouter({ healthz, visit, dailyStats, clientError, metrics: metricsEndpoint }),
     transport: new WebSocketTransport({ pingInterval: 10_000, pingMaxRetries: 3 }),
     ...(presence ? { presence } : {}),
     ...(driver ? { driver } : {}),

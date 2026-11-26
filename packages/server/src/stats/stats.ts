@@ -15,8 +15,22 @@ import type { GameRecord, GameRecorder, GameSummaryRecord } from '../persistence
  * 운영 통계 (docs/specs/stats.md).
  * 판 수와 참여자는 이미 저장하는 games·game_players에서 세고, 방문자만 daily_visitors에 따로 남긴다.
  */
+/** CE-07: 하루 동안 같은 지문으로 묶은 클라이언트 오류 */
+export interface ClientErrorRow {
+  readonly day: string;
+  readonly fingerprint: string;
+  readonly kind: string;
+  readonly game: string | null;
+  readonly message: string;
+  readonly release: string;
+  readonly platform: string;
+  readonly count: number;
+}
+
 export interface StatsStore {
   addVisit(day: string, guestHash: string): Promise<void>;
+  /** CE-07: 같은 (day, fingerprint)면 개수만 더한다 */
+  addClientErrors(rows: readonly ClientErrorRow[]): Promise<void>;
   /** days는 오래된 날부터. 기록이 없는 날은 0으로 채워 같은 길이로 돌려준다 */
   daily(days: readonly string[]): Promise<DailyStats[]>;
 }
@@ -25,6 +39,7 @@ type Counts = {
   visitors: Map<string, number>;
   players: Map<string, number>;
   games: Map<string, Map<string, number>>;
+  clientErrors: Map<string, Map<string, number>>;
 };
 
 function fill(days: readonly string[], c: Counts): DailyStats[] {
@@ -33,6 +48,7 @@ function fill(days: readonly string[], c: Counts): DailyStats[] {
     visitors: c.visitors.get(date) ?? 0,
     players: c.players.get(date) ?? 0,
     games: Object.fromEntries(c.games.get(date) ?? []),
+    clientErrors: Object.fromEntries(c.clientErrors.get(date) ?? []),
   }));
 }
 
@@ -50,10 +66,30 @@ export class PgStatsStore implements StatsStore {
     );
   }
 
+  async addClientErrors(rows: readonly ClientErrorRow[]): Promise<void> {
+    if (rows.length === 0) return;
+    const col = <K extends keyof ClientErrorRow>(k: K) => rows.map((r) => r[k]);
+    await this.pool.query(
+      `INSERT INTO daily_client_errors (day, fingerprint, kind, game, message, release, platform, count)
+       SELECT * FROM unnest($1::date[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[], $8::int[])
+       ON CONFLICT (day, fingerprint) DO UPDATE SET count = daily_client_errors.count + EXCLUDED.count`,
+      [
+        col('day'),
+        col('fingerprint'),
+        col('kind'),
+        col('game'),
+        col('message'),
+        col('release'),
+        col('platform'),
+        col('count'),
+      ],
+    );
+  }
+
   async daily(days: readonly string[]): Promise<DailyStats[]> {
     const from = days[0];
     if (!from) return [];
-    const [games, players, visitors] = await Promise.all([
+    const [games, players, visitors, errors] = await Promise.all([
       this.pool.query<{ d: string; t: string; n: number }>(
         `SELECT ${DAY_KST} AS d, g.game_type AS t, count(*)::int AS n
            FROM games g WHERE g.ended_at >= ${FROM_KST} GROUP BY 1, 2`,
@@ -71,14 +107,25 @@ export class PgStatsStore implements StatsStore {
            FROM daily_visitors WHERE day >= $1::date GROUP BY 1`,
         [from],
       ),
+      // CE-08: 종류별 개수만. 문구와 지문은 응답에 넣지 않는다
+      this.pool.query<{ d: string; t: string; n: number }>(
+        `SELECT to_char(day, 'YYYY-MM-DD') AS d, kind AS t, sum(count)::int AS n
+           FROM daily_client_errors WHERE day >= $1::date GROUP BY 1, 2`,
+        [from],
+      ),
     ]);
-    const c: Counts = { visitors: new Map(), players: new Map(), games: new Map() };
+    const c: Counts = { visitors: new Map(), players: new Map(), games: new Map(), clientErrors: new Map() };
     for (const r of visitors.rows) c.visitors.set(r.d, r.n);
     for (const r of players.rows) c.players.set(r.d, r.n);
-    for (const r of games.rows) {
-      const m = c.games.get(r.d) ?? new Map<string, number>();
-      m.set(r.t, r.n);
-      c.games.set(r.d, m);
+    for (const [rows, target] of [
+      [games.rows, c.games],
+      [errors.rows, c.clientErrors],
+    ] as const) {
+      for (const r of rows) {
+        const m = target.get(r.d) ?? new Map<string, number>();
+        m.set(r.t, r.n);
+        target.set(r.d, m);
+      }
     }
     return fill(days, c);
   }
@@ -92,6 +139,15 @@ export class MemoryStats implements StatsStore, GameRecorder {
   readonly #visitors = new Map<string, Set<string>>();
   readonly #players = new Map<string, Set<string>>();
   readonly #games = new Map<string, Map<string, number>>();
+  readonly #clientErrors = new Map<string, Map<string, number>>();
+
+  async addClientErrors(rows: readonly ClientErrorRow[]): Promise<void> {
+    for (const r of rows) {
+      const m = this.#clientErrors.get(r.day) ?? new Map<string, number>();
+      m.set(r.kind, (m.get(r.kind) ?? 0) + r.count);
+      this.#clientErrors.set(r.day, m);
+    }
+  }
 
   async addVisit(day: string, guestHash: string): Promise<void> {
     const set = this.#visitors.get(day) ?? new Set<string>();
@@ -101,7 +157,12 @@ export class MemoryStats implements StatsStore, GameRecorder {
 
   async daily(days: readonly string[]): Promise<DailyStats[]> {
     const size = (m: Map<string, Set<string>>) => new Map([...m].map(([d, s]) => [d, s.size]));
-    return fill(days, { visitors: size(this.#visitors), players: size(this.#players), games: this.#games });
+    return fill(days, {
+      visitors: size(this.#visitors),
+      players: size(this.#players),
+      games: this.#games,
+      clientErrors: this.#clientErrors,
+    });
   }
 
   #count(gameType: string, endedAt: Date, guestIds: readonly (string | null)[]): void {

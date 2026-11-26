@@ -4,6 +4,7 @@ import { SITE } from './games/catalog.js';
 import { GAMES, LEGACY_GAME_ID, type GameInfo } from './games/registry.js';
 import { savedNickname } from './identity.js';
 import type { GameFlow, GameSession } from './games/flow.js';
+import { installErrorReports, type ErrorContext } from './errorReport.js';
 import { describeError, JoinError } from './net.js';
 import { invitePath, lobbyPath, parseRoute } from './routes.js';
 import { renderHub } from './screens/hub.js';
@@ -148,6 +149,22 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible' || session) return;
   if (parseRoute(location.pathname, GAMES, LEGACY_GAME_ID).kind === 'invite') void boot();
 });
+
+// CE-02: 오류가 난 화면 종류와 게임 (주소에서 읽는다. 방 안에서는 주소가 초대 링크다)
+function errorContext(): ErrorContext {
+  const route = parseRoute(location.pathname, GAMES, LEGACY_GAME_ID);
+  switch (route.kind) {
+    case 'stats':
+      return { route: 'stats', game: null };
+    case 'lobby':
+      return { route: 'lobby', game: route.game.roomType };
+    case 'invite':
+      return { route: 'room', game: route.game.roomType };
+    default:
+      return { route: 'hub', game: null };
+  }
+}
+installErrorReports(errorContext);
 
 // ST-01: 하루 한 번 방문을 알린다. 통계 화면만 연 것은 세지 않는다
 if (parseRoute(location.pathname, GAMES, LEGACY_GAME_ID).kind !== 'stats') recordVisit();

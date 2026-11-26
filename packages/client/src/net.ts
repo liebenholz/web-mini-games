@@ -11,6 +11,7 @@ import {
   type ServerMessages,
 } from '@wmg/rules';
 import { serverUrl } from './config.js';
+import { reportClientError, watchReconnect } from './errorReport.js';
 import { guestId } from './identity.js';
 
 /** 공유 상태(공개 정보)를 평범한 객체로 옮긴 것. 서버 state.ts와 같은 모양이다 */
@@ -103,6 +104,18 @@ export function closeReason(code: number): string | null {
   return code === 1000 ? null : 'NETWORK';
 }
 
+/**
+ * 방 만들기·입장 실패를 JoinError로 바꾼다. 네트워크나 알 수 없는 이유면 오류로 보고한다 (CE-01 connect_failed).
+ * 서버가 정상적으로 거절한 것(ROOM_NOT_FOUND, ROOM_FULL, KICKED …)은 보고하지 않는다
+ */
+export function joinFailure(error: unknown): JoinError {
+  const joinError = error instanceof JoinError ? error : toJoinError(error);
+  if (joinError.code === 'NETWORK') {
+    reportClientError('connect_failed', error instanceof JoinError ? 'join timeout' : error);
+  }
+  return joinError;
+}
+
 export function toJoinError(error: unknown): JoinError {
   const message = error instanceof Error ? error.message : String(error);
   const known = [
@@ -167,6 +180,7 @@ export class Session {
       });
     });
     room.onMessage('*', (type, payload) => this.#onMessage(type as keyof ServerMessages, payload));
+    watchReconnect(room);
     room.onDrop(() => this.#update({ connection: 'reconnecting' }));
     room.onReconnect(() => this.#update({ connection: 'online' }));
     room.onLeave((code) => {
@@ -180,7 +194,7 @@ export class Session {
       const room = await sdk().create(GAME_ID, { guestId: guestId(), nickname, options });
       return await new Session(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 
@@ -194,7 +208,7 @@ export class Session {
       }
       return await new Session(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 
@@ -208,7 +222,7 @@ export class Session {
       });
       return await new Session(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 

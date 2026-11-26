@@ -317,6 +317,27 @@ curl -s -H "Authorization: Bearer $METRICS_TOKEN" https://api.<도메인>/metric
 - `.env`를 바꾼 뒤에는 `SERVER_IMAGE=ghcr.io/<owner>/web-mini-games/server:<지금 태그> docker compose up -d server`로 다시 띄운다. `SERVER_IMAGE`는 `.env`에 없어서 빼먹으면 `wmg-server:local`을 받으려다 실패한다 (서버는 그대로 유지된다).
 - 부하 테스트 절차는 `docs/ops/load-test.md`에 있다.
 
+### 15-3. 클라이언트 오류 보기
+
+브라우저에서 난 오류는 `daily_client_errors`에 날짜별로 묶여 쌓인다 (`docs/specs/client-errors.md`). `/stats`에는 종류별 개수만 나오고, 문구는 여기서 본다. VM의 `~/wmg/infra`에서:
+
+```bash
+docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+```sql
+-- 최근 7일 많이 난 오류
+SELECT day, kind, game, platform, release, count, message
+  FROM daily_client_errors WHERE day > current_date - 7
+ ORDER BY count DESC LIMIT 30;
+-- 배포(release)별 오류 수
+SELECT release, kind, sum(count) FROM daily_client_errors
+ WHERE day > current_date - 7 GROUP BY 1, 2 ORDER BY 1 DESC;
+```
+
+- `release`는 클라이언트 빌드 커밋 앞 7자다. 그 커밋으로 GitHub에서 배포를 찾는다.
+- 보고는 서버 메모리에 모였다가 1분마다 저장된다. 방금 난 오류는 1분 뒤에 보인다.
+
 ## 16. 백업과 복구
 
 `.github/workflows/backup-db.yml`이 매일 한국 시간 05:00에 돈다.

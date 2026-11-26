@@ -2,7 +2,8 @@ import type { Room } from '@colyseus/sdk';
 import { bulls } from '@wmg/rules';
 import { toast } from '../../dom.js';
 import { guestId } from '../../identity.js';
-import { closeReason, describeError, JoinError, sdk, toJoinError } from '../../net.js';
+import { watchReconnect } from '../../errorReport.js';
+import { closeReason, describeError, JoinError, joinFailure, sdk } from '../../net.js';
 
 export interface BullsPlayerView {
   readonly id: string;
@@ -120,6 +121,7 @@ export class BullsSession {
       this.#update(fresh ? { view, secret: '', over: null } : { view });
     });
     room.onMessage('*', (type, payload) => this.#onMessage(String(type), payload as Record<string, unknown>));
+    watchReconnect(room);
     room.onDrop(() => this.#update({ connection: 'reconnecting' }));
     room.onReconnect(() => this.#update({ connection: 'online' }));
     room.onLeave((code) => {
@@ -136,7 +138,7 @@ export class BullsSession {
       const room = await sdk().create(bulls.BULLS_ROOM_TYPE, { guestId: guestId(), nickname, options });
       return await new BullsSession(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 
@@ -150,7 +152,7 @@ export class BullsSession {
       }
       return await new BullsSession(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 
@@ -163,7 +165,7 @@ export class BullsSession {
       });
       return await new BullsSession(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 
