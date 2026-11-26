@@ -392,6 +392,52 @@ describe('GomokuRoom 통합 (Phase 2 M2)', () => {
   });
 });
 
+describe('ReversiRoom 통합 (reversi.md, ADR 0003 P5)', () => {
+  it('두 사람이 들어와 시작하고, 착수가 판에 반영되며 뒤집힌 돌을 알린다', async () => {
+    const room = await colyseus.sdk.create('reversi', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { fillWithBots: false, turnSeconds: 15, blackPolicy: 'host' },
+    });
+    const host = spy(room);
+    await waitFor(() => host.playerId !== '');
+    expect(host.room.name).toBe('reversi');
+    const guestSpy = await joinRoom(host.room.roomId, newGuest(), '손님');
+    guestSpy.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as { phase: string; turnId: string; currentTurn: string; board: number[] };
+    await waitFor(() => state.phase === 'PLAYING');
+    expect(state.currentTurn).toBe(host.playerId);
+    expect(state.board[3 * 8 + 3]).toBe(2);
+
+    // D3 (x=3, y=2): D4가 뒤집힌다
+    const turnId = state.turnId;
+    guestSpy.room.send('place', { x: 3, y: 2, turnId });
+    await waitFor(() => guestSpy.messages.some((m) => m.type === 'error'));
+    host.room.send('place', { x: 0, y: 0, turnId });
+    await waitFor(() => host.messages.some((m) => m.type === 'error' && m.payload.code === 'INVALID_MOVE'));
+    host.room.send('place', { x: 3, y: 2, turnId });
+    await waitFor(() => state.turnId !== turnId);
+    expect(state.board[2 * 8 + 3]).toBe(1);
+    expect(state.board[3 * 8 + 3]).toBe(1);
+    expect(state.currentTurn).toBe(guestSpy.playerId);
+    await waitFor(() => has(guestSpy, 'stone_placed'));
+    expect(guestSpy.messages.find((m) => m.type === 'stone_placed')?.payload).toMatchObject({
+      color: 'black',
+      x: 3,
+      y: 2,
+      flipped: [{ x: 3, y: 3 }],
+      moveNo: 1,
+    });
+
+    await guestSpy.room.leave();
+    await waitFor(() =>
+      host.messages.some((m) => m.type === 'player_replaced' && m.payload.reason === 'left'),
+    );
+  });
+});
+
 describe('OneCardRoom 통합 (Phase 2 M3)', () => {
   it('두 사람 + 봇 2명으로 시작하면 각자 자기 패 7장만 받고, 공유 상태에는 패가 없다 (C-40)', async () => {
     const room = await colyseus.sdk.create('one_card', {

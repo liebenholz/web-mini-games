@@ -46,6 +46,12 @@
   --p6-bg: #ffe0ea;
   --p6-fg: #a3284f;
 
+  /* 리버시 판 (reversi.md 6장 시안) */
+  --rv-board: #2f7a5c;
+  --rv-board-edge: #24614a;
+  --rv-line: #1e5340;
+  --rv-flip-mark: #ffd666;
+
   --focus: #6a4df4;
 
   --font-ui:

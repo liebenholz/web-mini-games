@@ -1,10 +1,11 @@
-import { bulls, GAME_ID, gomoku, oneCard } from '@wmg/rules';
+import { bulls, GAME_ID, gomoku, oneCard, reversi } from '@wmg/rules';
 import { bullsRules } from './bulls-and-cows/rules.js';
 import { CATALOG, type GameCatalogEntry } from './catalog.js';
 import { asFlow, type GameFlow } from './flow.js';
 import { gomokuRules } from './gomoku/rules.js';
 import { liarsDiceRules } from './liars-dice/rules.js';
 import { oneCardRules } from './one-card/rules.js';
+import { reversiRules } from './reversi/rules.js';
 
 export type { GameCategory } from './catalog.js';
 export { LEGACY_GAME_ID } from '../identity.js';
@@ -42,6 +43,11 @@ const IMPLEMENTED: Record<string, Pick<GameInfo, 'roomType' | 'rules' | 'loadFlo
     roomType: bulls.BULLS_ROOM_TYPE,
     rules: bullsRules,
     loadFlow: () => import('./bulls-and-cows/flow.js').then((m) => asFlow(m.bullsFlow)),
+  },
+  reversi: {
+    roomType: reversi.REVERSI_ROOM_TYPE,
+    rules: reversiRules,
+    loadFlow: () => import('./reversi/flow.js').then((m) => asFlow(m.reversiFlow)),
   },
 };
 

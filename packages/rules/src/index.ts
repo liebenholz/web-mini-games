@@ -13,5 +13,8 @@ export * as oneCard from './games/one-card/index.js';
 
 /** 숫자야구 룰 엔진 (docs/specs/bulls-and-cows.md): bulls.score(...) */
 export * as bulls from './games/bulls-and-cows/index.js';
+
+/** 리버시 룰 엔진 (docs/specs/reversi.md): reversi.placeStone(...) */
+export * as reversi from './games/reversi/index.js';
 export * from './stats.js';
 export * from './clientErrors.js';

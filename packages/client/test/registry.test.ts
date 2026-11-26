@@ -4,14 +4,16 @@ import { CATALOG } from '../src/games/catalog.js';
 import { findGame, GAMES, gameByRoomType } from '../src/games/registry.js';
 
 describe('게임 목록', () => {
-  it('Phase 2 M4: 거짓말쟁이 주사위, 오목, 원카드, 숫자야구 모두 플레이할 수 있다', () => {
+  it('거짓말쟁이 주사위, 오목, 원카드, 숫자야구, 리버시 모두 플레이할 수 있다', () => {
     expect(GAMES.filter((g) => g.status === 'available').map((g) => g.id)).toEqual([
       'liars-dice',
       'gomoku',
       'one-card',
       'bulls-and-cows',
+      'reversi',
     ]);
     expect(findGame('bulls-and-cows')?.roomType).toBe('bulls_and_cows');
+    expect(findGame('reversi')?.roomType).toBe('reversi');
     expect(findGame('gomoku')?.roomType).toBe('gomoku');
     expect(findGame('one-card')?.roomType).toBe('one_card');
   });
