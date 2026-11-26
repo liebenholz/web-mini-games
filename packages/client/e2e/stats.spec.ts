@@ -34,3 +34,28 @@ test('ST-01, ST-03: 메인을 열면 방문이 잡히고, /stats에서 그래프
   await page.getByRole('button', { name: '게임 목록' }).click();
   await expect(page).toHaveURL(/\/$/);
 });
+
+test('CE-01~CE-03, CE-08: 화면에서 난 오류를 정리해 보고하고, /stats에 오류 칸과 그래프가 있다', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const report = page.waitForRequest((req) => req.url().endsWith('/client-error') && req.method() === 'POST');
+  await page.evaluate(() => {
+    setTimeout(() => {
+      throw new Error('e2e boom in room K7MQ2P after 98765ms');
+    });
+  });
+  const body = (await report).postDataJSON() as Record<string, unknown>;
+  expect(body).toMatchObject({
+    kind: 'js_error',
+    message: 'e2e boom in room XXXXXX after #ms',
+    route: 'hub',
+    game: null,
+    release: 'dev',
+  });
+  expect(JSON.stringify(body)).not.toMatch(/guest|nickname|K7MQ2P/i);
+
+  await page.goto('/stats');
+  await expect(page.getByTestId('today-errors')).toContainText('오늘 오류');
+  await expect(page.getByTestId('chart-errors')).toBeVisible();
+});

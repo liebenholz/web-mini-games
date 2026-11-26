@@ -17,6 +17,8 @@ export interface DailyStats {
   readonly players: number;
   /** 게임별 끝난 판 수. 키는 서버 방 종류(liars_dice, gomoku …) */
   readonly games: Readonly<Record<string, number>>;
+  /** CE-08: 그날 받은 클라이언트 오류 수. 키는 kind (docs/specs/client-errors.md) */
+  readonly clientErrors: Readonly<Record<string, number>>;
 }
 
 export interface StatsResponse {

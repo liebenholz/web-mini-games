@@ -2,7 +2,8 @@ import type { Room } from '@colyseus/sdk';
 import { gomoku } from '@wmg/rules';
 import { toast } from '../../dom.js';
 import { guestId } from '../../identity.js';
-import { closeReason, describeError, JoinError, sdk, toJoinError } from '../../net.js';
+import { watchReconnect } from '../../errorReport.js';
+import { closeReason, describeError, JoinError, joinFailure, sdk } from '../../net.js';
 
 export interface GomokuPlayerView {
   readonly id: string;
@@ -93,6 +94,7 @@ export class GomokuSession {
     room.reconnection.maxRetries = 30;
     room.onStateChange((state) => this.#update({ view: readView(state as SchemaLike) }));
     room.onMessage('*', (type, payload) => this.#onMessage(String(type), payload as Record<string, unknown>));
+    watchReconnect(room);
     room.onDrop(() => this.#update({ connection: 'reconnecting' }));
     room.onReconnect(() => this.#update({ connection: 'online' }));
     room.onLeave((code) => {
@@ -109,7 +111,7 @@ export class GomokuSession {
       const room = await sdk().create(gomoku.GOMOKU_ROOM_TYPE, { guestId: guestId(), nickname, options });
       return await new GomokuSession(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 
@@ -123,7 +125,7 @@ export class GomokuSession {
       }
       return await new GomokuSession(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 
@@ -136,7 +138,7 @@ export class GomokuSession {
       });
       return await new GomokuSession(room).#ready();
     } catch (error) {
-      throw error instanceof JoinError ? error : toJoinError(error);
+      throw joinFailure(error);
     }
   }
 

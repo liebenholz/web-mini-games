@@ -29,6 +29,7 @@ interface Series {
 }
 
 const NS = 'http://www.w3.org/2000/svg';
+const sum = (values: readonly number[]) => values.reduce((a, b) => a + b, 0);
 const GAME_COLORS = [
   'var(--p1-fg)',
   'var(--p2-fg)',
@@ -67,6 +68,23 @@ export function gameSeries(days: readonly DailyStats[]): Series[] {
     values: days.map((d) => d.games[s.key] ?? 0),
   }));
 }
+
+/** CE-01: 오류 종류 → 이름과 색. 기록이 있는 종류만 */
+const ERROR_KINDS: readonly { key: string; label: string; color: string }[] = [
+  { key: 'js_error', label: '화면 오류', color: 'var(--danger)' },
+  { key: 'promise_rejection', label: '처리 안 된 오류', color: 'var(--p4-fg)' },
+  { key: 'connect_failed', label: '접속 실패', color: 'var(--p2-fg)' },
+  { key: 'reconnect_failed', label: '재접속 실패', color: 'var(--p5-fg)' },
+];
+
+export function errorSeries(days: readonly DailyStats[]): Series[] {
+  return ERROR_KINDS.filter((k) => days.some((d) => (d.clientErrors[k.key] ?? 0) > 0)).map((k) => ({
+    ...k,
+    values: days.map((d) => d.clientErrors[k.key] ?? 0),
+  }));
+}
+
+const totalErrors = (day: DailyStats | undefined) => (day ? sum(Object.values(day.clientErrors)) : 0);
 
 interface ChartSpec {
   readonly kind: 'line' | 'stack';
@@ -266,8 +284,6 @@ function tile(label: string, value: number, testId: string): HTMLElement {
   );
 }
 
-const sum = (values: readonly number[]) => values.reduce((a, b) => a + b, 0);
-
 function renderData(data: StatsResponse): { nodes: HTMLElement[]; redraw: () => void } {
   const days = data.days;
   const dates = days.map((d) => d.date);
@@ -302,6 +318,24 @@ function renderData(data: StatsResponse): { nodes: HTMLElement[]; redraw: () => 
     games.length === 0 ? h('p', { class: 'hint chart-empty' }, '이 기간에 끝난 판이 없습니다.') : null;
   if (emptyGames) played.card.querySelector('.chart-plot')?.before(emptyGames);
 
+  // CE-08: 종류별 개수만 보여 준다. 문구는 운영 SQL로 본다
+  const errors = errorSeries(days);
+  const failed = chartCard(
+    '일일 오류',
+    { kind: 'stack', dates, series: errors },
+    (i) => {
+      const parts = errors.filter((s) => (s.values[i] ?? 0) > 0).map((s) => `${s.label} ${s.values[i]}`);
+      return `${longDate(dates[i] ?? '')} · ${totalErrors(days[i])}건${parts.length ? ` (${parts.join(', ')})` : ''}`;
+    },
+    (s) => `${sum(s.values)}건`,
+    'chart-errors',
+  );
+  if (errors.length === 0) {
+    failed.card
+      .querySelector('.chart-plot')
+      ?.before(h('p', { class: 'hint chart-empty' }, '기간 안에 수집된 오류가 없습니다.'));
+  }
+
   const tiles = h(
     'div',
     { class: 'stat-tiles' },
@@ -309,12 +343,14 @@ function renderData(data: StatsResponse): { nodes: HTMLElement[]; redraw: () => 
     tile('오늘 참여자', today?.players ?? 0, 'today-players'),
     tile('오늘 판 수', today ? totalGames(today) : 0, 'today-games'),
     tile(`${data.range}일 판 수`, sum(days.map(totalGames)), 'range-games'),
+    tile('오늘 오류', totalErrors(today), 'today-errors'),
   );
   return {
-    nodes: [tiles, visitors.card, played.card],
+    nodes: [tiles, visitors.card, played.card, failed.card],
     redraw: () => {
       visitors.redraw();
       played.redraw();
+      failed.redraw();
     },
   };
 }

@@ -56,8 +56,8 @@ describe('MemoryStats', () => {
     await m.saveSummary(summary('gomoku', '2026-11-24T02:00:00Z', ['guest-aaaaaaaa', 'guest-bbbbbbbb']));
     await m.saveSummary(summary('one_card', '2026-11-24T16:00:00Z', ['guest-aaaaaaaa'])); // 한국 11-25
     expect(await m.daily(['2026-11-24', '2026-11-25'])).toEqual([
-      { date: '2026-11-24', visitors: 0, players: 2, games: { gomoku: 2 } },
-      { date: '2026-11-25', visitors: 0, players: 1, games: { one_card: 1 } },
+      { date: '2026-11-24', visitors: 0, players: 2, games: { gomoku: 2 }, clientErrors: {} },
+      { date: '2026-11-25', visitors: 0, players: 1, games: { one_card: 1 }, clientErrors: {} },
     ]);
   });
 });
@@ -69,6 +69,7 @@ describe('StatsService', () => {
     const writes: string[] = [];
     const store: StatsStore = {
       addVisit: async (day, hash) => void writes.push(`${day}:${hash}`),
+      addClientErrors: async () => {},
       daily: async () => [],
     };
     const s = new StatsService(store, { now: () => now });
@@ -83,7 +84,11 @@ describe('StatsService', () => {
 
   it('ST-05: 1초에 새 방문 기록 수를 제한한다', async () => {
     let writes = 0;
-    const store: StatsStore = { addVisit: async () => void (writes += 1), daily: async () => [] };
+    const store: StatsStore = {
+      addVisit: async () => void (writes += 1),
+      addClientErrors: async () => {},
+      daily: async () => [],
+    };
     const s = new StatsService(store, { now: () => now, maxVisitsPerSecond: 3 });
     for (let i = 0; i < 10; i += 1) s.visit(`guest-${String(i).padStart(8, '0')}`);
     await flush();
@@ -95,9 +100,10 @@ describe('StatsService', () => {
     let queries = 0;
     const store: StatsStore = {
       addVisit: async () => {},
+      addClientErrors: async () => {},
       daily: async (days) => {
         queries += 1;
-        return days.map((date) => ({ date, visitors: 0, players: 0, games: {} }));
+        return days.map((date) => ({ date, visitors: 0, players: 0, games: {}, clientErrors: {} }));
       },
     };
     const s = new StatsService(store, { now: () => t });
@@ -115,6 +121,7 @@ describe('StatsService', () => {
     let fail = true;
     const store: StatsStore = {
       addVisit: async () => {},
+      addClientErrors: async () => {},
       daily: async () => {
         if (fail) throw new Error('db down');
         return [];

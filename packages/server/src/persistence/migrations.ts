@@ -77,4 +77,21 @@ CREATE TABLE daily_visitors (
 );
 `,
   },
+  {
+    // docs/specs/client-errors.md CE-07: 날짜마다 같은 오류(지문)끼리 묶은 개수와 대표 문구 하나
+    id: '004_daily_client_errors',
+    sql: `
+CREATE TABLE daily_client_errors (
+  day          date NOT NULL,
+  fingerprint  text NOT NULL,
+  kind         text NOT NULL,
+  game         text,
+  message      text NOT NULL,
+  release      text NOT NULL,
+  platform     text NOT NULL,
+  count        integer NOT NULL,
+  PRIMARY KEY (day, fingerprint)
+);
+`,
+  },
 ];

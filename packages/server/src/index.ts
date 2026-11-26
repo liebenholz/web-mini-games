@@ -6,7 +6,8 @@ import { DEFAULT_TIMING } from './games/liars-dice/LiarsDiceMatch.js';
 import { activeRooms, configureLiarsDice, runtime } from './games/liars-dice/runtime.js';
 import { migrate, PgRecorder } from './persistence/pgRecorder.js';
 import { MetricsCollector } from './metrics/metrics.js';
-import { MemoryStats, PgStatsStore, StatsService } from './stats/stats.js';
+import { ClientErrorService } from './stats/clientErrors.js';
+import { MemoryStats, PgStatsStore, StatsService, type StatsStore } from './stats/stats.js';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -24,6 +25,7 @@ async function main(): Promise<void> {
 
   let recorder: PgRecorder | null = null;
   let stats: StatsService;
+  let statsStore: StatsStore;
   if (config.databaseUrl) {
     recorder = new PgRecorder({ connectionString: config.databaseUrl, log: runtime.log });
     try {
@@ -36,12 +38,14 @@ async function main(): Promise<void> {
       });
     }
     configureLiarsDice({ recorder });
-    stats = new StatsService(new PgStatsStore(recorder.pool), { log: runtime.log });
+    statsStore = new PgStatsStore(recorder.pool);
+    stats = new StatsService(statsStore, { log: runtime.log });
   } else {
     runtime.log('warn', 'DATABASE_URL not set; game records are not stored');
     // 개발·E2E: 통계만 메모리에 센다 (재시작하면 사라진다)
     const memory = new MemoryStats();
     configureLiarsDice({ recorder: memory });
+    statsStore = memory;
     stats = new StatsService(memory, { log: runtime.log });
   }
 
@@ -51,9 +55,14 @@ async function main(): Promise<void> {
     runtime.log('info', 'metrics', { ...snapshot }),
   );
 
+  // CE-07: 1분마다 모아서 저장한다
+  const clientErrors = new ClientErrorService(statsStore, { log: runtime.log });
+  clientErrors.start();
+
   const server = createGameServer({
     config,
     stats,
+    clientErrors,
     metrics: { collector, token: config.metricsToken },
     ...(config.redisUrl
       ? { presence: new RedisPresence(config.redisUrl), driver: new RedisDriver(config.redisUrl) }
@@ -77,6 +86,7 @@ async function main(): Promise<void> {
       stillInProgress: [...activeRooms].filter((r) => r.inProgress).length,
     });
     await server.gracefullyShutdown(false);
+    await clientErrors.stop();
     await recorder?.close();
     collector.stop();
     process.exit(0);

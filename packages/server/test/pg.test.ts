@@ -16,9 +16,14 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
 
   it('한 판이 끝나면 5개 테이블에 기록이 남고, 저장된 값으로 재현된다', async () => {
     await pool.query(
-      'DROP TABLE IF EXISTS daily_visitors, bids, rounds, game_players, games, players, schema_migrations CASCADE',
+      'DROP TABLE IF EXISTS daily_client_errors, daily_visitors, bids, rounds, game_players, games, players, schema_migrations CASCADE',
     );
-    expect(await migrate(pool)).toEqual(['001_init', '002_game_type_summary', '003_daily_visitors']);
+    expect(await migrate(pool)).toEqual([
+      '001_init',
+      '002_game_type_summary',
+      '003_daily_visitors',
+      '004_daily_client_errors',
+    ]);
     expect(await migrate(pool)).toEqual([]);
 
     const { scheduler, io } = startHumans(3, { startingDice: 3 }, 11);
@@ -130,8 +135,37 @@ describe.skipIf(!url)('M3: PostgreSQL 저장', () => {
     await store.addVisit('2026-11-24', 'hash-a');
     await store.addVisit('2026-11-24', 'hash-b');
     const [day23, day24] = await store.daily(['2026-11-23', '2026-11-24']);
-    expect(day23).toEqual({ date: '2026-11-23', visitors: 0, players: 0, games: {} });
-    expect(day24).toEqual({ date: '2026-11-24', visitors: 2, players: 1, games: { gomoku: 1 } });
+    expect(day23).toEqual({ date: '2026-11-23', visitors: 0, players: 0, games: {}, clientErrors: {} });
+    expect(day24).toEqual({
+      date: '2026-11-24',
+      visitors: 2,
+      players: 1,
+      games: { gomoku: 1 },
+      clientErrors: {},
+    });
+  });
+
+  it('CE-07, CE-08: 같은 지문은 개수만 더하고, 일일 통계에는 종류별 합계만 나온다', async () => {
+    const store = new PgStatsStore(pool);
+    const row = {
+      day: '2026-11-24',
+      fingerprint: 'fp-a',
+      kind: 'js_error',
+      game: 'gomoku',
+      message: 'boom',
+      release: 'abc1234',
+      platform: 'ios',
+      count: 2,
+    };
+    await store.addClientErrors([row, { ...row, fingerprint: 'fp-b', kind: 'reconnect_failed', count: 1 }]);
+    await store.addClientErrors([{ ...row, count: 3, release: 'later' }]);
+    const saved = await pool.query(
+      "SELECT count, release FROM daily_client_errors WHERE fingerprint = 'fp-a'",
+    );
+    expect(saved.rows).toEqual([{ count: 5, release: 'abc1234' }]);
+    const [day24] = await store.daily(['2026-11-24']);
+    expect(day24?.clientErrors).toEqual({ js_error: 5, reconnect_failed: 1 });
+    expect(JSON.stringify(day24)).not.toContain('boom');
   });
 });
 
