@@ -303,10 +303,12 @@ export function mountOneCardGame(root: HTMLElement, session: OneCardSession, onE
             type: 'button',
             'data-card': card,
             'aria-label': `${cardName(card)}${ok ? ', 낼 수 있음' : ''}`,
-            style: `left:${start + i * step}px;${fan ? `transform:rotate(${offset * 3}deg) translateY(${Math.abs(offset) * 1.5}px)` : ''}`,
           },
           cardFace(card),
         );
+        // CSP(style-src 'self')는 style 속성 문자열을 막는다. CSSOM으로 넣는다
+        b.style.left = `${start + i * step}px`;
+        if (fan) b.style.transform = `rotate(${offset * 3}deg) translateY(${Math.abs(offset) * 1.5}px)`;
         b.addEventListener('click', () => play(card));
         return b;
       }),

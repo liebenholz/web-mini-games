@@ -15,12 +15,13 @@ import { ReversiRoom } from './games/reversi/ReversiRoom.js';
 import { BullsRoom } from './games/bulls-and-cows/BullsRoom.js';
 import { OneCardRoom } from './games/one-card/OneCardRoom.js';
 import { activeRooms, runtime } from './games/liars-dice/runtime.js';
+import { installMatchmakeLimit } from './framework/matchmakeLimit.js';
 import { checkBearer, type MetricsCollector } from './metrics/metrics.js';
 import type { ClientErrorService } from './stats/clientErrors.js';
 import type { StatsService } from './stats/stats.js';
 
 export interface CreateServerOptions {
-  readonly config: Pick<ServerConfig, 'corsOrigins'>;
+  readonly config: Pick<ServerConfig, 'corsOrigins'> & Partial<Pick<ServerConfig, 'matchmakePerMinute'>>;
   readonly presence?: Presence;
   readonly driver?: matchMaker.MatchMakerDriver;
   /** docs/specs/stats.md. 없으면 /visit, /stats가 503을 돌려준다 */
@@ -52,6 +53,8 @@ export function createGameServer({
   clientErrors,
 }: CreateServerOptions) {
   configureCors(config.corsOrigins);
+  // 방 대량 생성 방지 (보안 점검 2026-11-27). 테스트 서버는 값을 넘기지 않아 꺼져 있다
+  installMatchmakeLimit(config.matchmakePerMinute ?? 0);
 
   // 외부 감시 서비스(무료 플랜)는 HEAD로만 확인하므로 HEAD도 받는다 (운영 가이드 15-1)
   const healthz = createEndpoint('/healthz', { method: ['GET', 'HEAD'] }, async () => ({

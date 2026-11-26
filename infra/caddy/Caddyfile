@@ -4,6 +4,8 @@
 	reverse_proxy server:2567 {
 		# 배포로 서버가 잠깐 내려가도 바로 502를 내지 않고 기다린다
 		lb_try_duration 10s
+		# 서버의 IP별 제한(방 만들기)이 읽는 값. 클라이언트가 보낸 X-Real-IP는 믿지 않고 실제 접속 주소로 덮어쓴다
+		header_up X-Real-IP {remote_host}
 	}
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"

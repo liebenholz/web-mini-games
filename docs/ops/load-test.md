@@ -34,6 +34,8 @@
    ```dotenv
    METRICS_TOKEN=<openssl rand -hex 24 로 만든 값>
    METRICS_INTERVAL_SECONDS=10
+   # 부하 테스트는 Mac 한 곳에서 방을 수백 개 만든다. IP별 방 만들기 제한(기본 분당 60)을 테스트 동안만 끈다
+   MATCHMAKE_PER_MINUTE=0
    ```
    ```bash
    cd ~/wmg/infra && SERVER_IMAGE=ghcr.io/<owner>/web-mini-games/server:<지금 배포된 태그> docker compose up -d server
@@ -83,7 +85,7 @@ pnpm --filter server loadtest -- --url wss://api.<도메인> --stages 10,25,50,1
    COMMIT;
    ```
    부하용 접속은 `/visit`를 보내지 않으므로 방문자 수에는 들어가지 않는다.
-2. **지표 간격 되돌리기:** `.env`에서 `METRICS_INTERVAL_SECONDS` 줄을 지우고 2장 3번과 같은 명령(`SERVER_IMAGE=… docker compose up -d server`)으로 다시 띄운다.
+2. **지표 간격과 방 만들기 제한 되돌리기:** `.env`에서 `METRICS_INTERVAL_SECONDS`, `MATCHMAKE_PER_MINUTE` 줄을 지우고 2장 3번과 같은 명령(`SERVER_IMAGE=… docker compose up -d server`)으로 다시 띄운다.
 3. **확인:** `/healthz`, `/stats`(1분 캐시)가 테스트 전 숫자로 돌아왔는지 본다.
 4. **보고서:** 결과 파일로 `docs/reports/load-test-YYYYMMDD.md`를 쓴다. 단계별 방 수, 접속 수, 메모리, CPU, 이벤트 루프 p99, 초당 메시지, 입장 지연, 오류, 멈춘 이유, 병목과 개선 항목.
 

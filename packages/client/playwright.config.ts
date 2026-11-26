@@ -29,7 +29,13 @@ export default defineConfig({
   webServer: [
     {
       command: `pnpm --filter server exec tsx --conditions=source src/index.ts`,
-      env: { PORT: String(SERVER_PORT), GAME_TIMING_SCALE: '0.05', NODE_ENV: 'development' },
+      // E2E는 한 주소(localhost)에서 방을 많이 만든다. IP별 방 만들기 제한은 끈다
+      env: {
+        PORT: String(SERVER_PORT),
+        GAME_TIMING_SCALE: '0.05',
+        NODE_ENV: 'development',
+        MATCHMAKE_PER_MINUTE: '0',
+      },
       url: `http://localhost:${SERVER_PORT}/healthz`,
       reuseExistingServer: false,
       timeout: 60_000,

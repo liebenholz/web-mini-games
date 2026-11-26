@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { CATALOG, SITE } from './src/games/catalog.js';
+import { headersFile } from './src/securityHeaders.js';
 
 /**
  * 링크 미리보기 (Open Graph). 카카오톡·디스코드는 스크립트를 실행하지 않아서 주소마다 HTML에 직접 적어야 한다.
@@ -69,6 +70,12 @@ function linkPreviews(): Plugin {
         '/* /index.html 200',
       ];
       this.emitFile({ type: 'asset', fileName: '_redirects', source: `${rules.join('\n')}\n` });
+      // 보안 헤더 (CSP의 connect-src는 빌드 때 받은 게임 서버 주소로 만든다)
+      this.emitFile({
+        type: 'asset',
+        fileName: '_headers',
+        source: headersFile(process.env.VITE_SERVER_URL),
+      });
     },
   };
 }

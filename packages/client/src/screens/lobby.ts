@@ -139,7 +139,12 @@ export function renderLobby(
           quickBtn,
         ),
     error,
-    h('p', { class: 'hint' }, '가입 없이 이 브라우저에 닉네임만 저장합니다. 빈자리는 봇이 채웁니다.'),
+    // 저장 위치를 사실대로 알린다: 브라우저(localStorage)와 서버 판 기록(players, game_players) 둘 다
+    h(
+      'p',
+      { class: 'hint', 'data-testid': 'storage-notice' },
+      '가입 없이 이용합니다. 닉네임과 무작위로 만든 이용자 ID를 이 브라우저와 게임 서버의 판 기록에 저장합니다. 빈자리는 봇이 채웁니다.',
+    ),
   );
   queueMicrotask(() => (inviteCode && savedNickname() ? joinBtn : nickInput).focus());
   return page;

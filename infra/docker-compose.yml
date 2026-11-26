@@ -32,6 +32,8 @@ services:
       # 비우면 /metrics는 닫혀 있고, 지표는 로그로만 남는다
       METRICS_TOKEN: ${METRICS_TOKEN:-}
       METRICS_INTERVAL_SECONDS: ${METRICS_INTERVAL_SECONDS:-60}
+      # IP별 분당 방 만들기·입장 요청 수. 부하 테스트 동안만 0(끄기)으로 둔다 (docs/ops/load-test.md)
+      MATCHMAKE_PER_MINUTE: ${MATCHMAKE_PER_MINUTE:-60}
     # 진행 중인 판이 끝날 때까지 기다린다 (SHUTDOWN_DRAIN_SECONDS보다 조금 길게)
     stop_grace_period: 16m
     depends_on:
