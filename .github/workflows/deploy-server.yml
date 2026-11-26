@@ -85,3 +85,6 @@ jobs:
           # 서버는 SIGTERM을 받으면 새 방을 막고 진행 중인 판이 끝날 때까지 기다린 뒤 종료한다 (stop_grace_period 16m)
           ssh -i ~/.ssh/deploy_key "$USER@$HOST" \
             "cd ~/wmg/infra && SERVER_IMAGE='$IMAGE' docker compose pull server && SERVER_IMAGE='$IMAGE' docker compose up -d --remove-orphans"
+          # Caddyfile만 바뀌면 compose는 caddy를 다시 만들지 않는다. 새 설정을 읽게 한다 (잘못된 설정이면 이전 설정을 유지하고 실패한다)
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" \
+            "cd ~/wmg/infra && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile"

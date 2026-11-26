@@ -2238,9 +2238,13 @@ button.game-main:focus-visible,
   }
 }
 
+/* 둘 수 있는 자리 점: 초록 판 대비 3:1 이상 (WCAG 1.4.11). 흑 점은 불투명이어야 3.26:1 */
 .rv-board .legal {
-  opacity: 0.38;
   pointer-events: none;
+}
+
+.rv-board .legal.white {
+  opacity: 0.8;
 }
 
 .rv-board .ghost {

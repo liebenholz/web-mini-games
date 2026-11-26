@@ -10,6 +10,11 @@ export function h<K extends keyof HTMLElementTagNameMap>(
   const el = document.createElement(tag);
   for (const [key, value] of Object.entries(attrs)) {
     if (value === null || value === undefined || value === false) continue;
+    if (key === 'style') {
+      // CSP(style-src 'self')는 style 속성(setAttribute)을 막지만 CSSOM은 허용한다
+      el.style.cssText = String(value);
+      continue;
+    }
     if (key.startsWith('on') && typeof value === 'function') {
       el.addEventListener(key.slice(2).toLowerCase(), value);
     } else if (key === 'class') {

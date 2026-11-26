@@ -21,10 +21,12 @@
   --accent: #6a4df4;
   --accent-hover: #5a3de6;
   --accent-ink: #ffffff;
-  --accent-soft: #eeeaff;
+  /* 이 위의 보라 글자 4.5:1 이상 (#eeeaff는 4.48) */
+  --accent-soft: #f2efff;
 
   /* 라이어, 패배, 마지막 5초 */
-  --danger: #d6364b;
+  /* 옅은 빨강 배경 위 글자 4.5:1 이상 (보안·접근성 점검 2026-11-27: #d6364b는 4.01) */
+  --danger: #c8303f;
   --danger-ink: #ffffff;
   --danger-soft: #ffe8eb;
 

@@ -15,6 +15,8 @@ export interface ServerConfig {
   readonly metricsToken: string | null;
   /** 운영 지표를 로그로 남기는 간격(초). 0이면 남기지 않는다 */
   readonly metricsIntervalSeconds: number;
+  /** IP별 분당 방 만들기·입장 요청 수. 0이면 제한하지 않는다 (부하 테스트 때만) */
+  readonly matchmakePerMinute: number;
 }
 
 export class ConfigError extends Error {}
@@ -54,6 +56,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     nodeEnv,
     metricsToken,
     metricsIntervalSeconds: intEnv(env.METRICS_INTERVAL_SECONDS, 60, 'METRICS_INTERVAL_SECONDS'),
+    matchmakePerMinute: intEnv(env.MATCHMAKE_PER_MINUTE, 60, 'MATCHMAKE_PER_MINUTE'),
     timingScale,
     port: intEnv(env.PORT, 2567, 'PORT'),
     corsOrigins,
