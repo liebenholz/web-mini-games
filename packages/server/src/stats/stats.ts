@@ -54,6 +54,10 @@ export interface RawGameMetrics {
   readonly attemptsN: number;
   readonly turnsSum: number;
   readonly bankruptGames: number;
+  /** 리버시: 넘김이 한 번이라도 나온 판 */
+  readonly passGames: number;
+  /** 리버시: 시간 초과로 서버가 대신 둔 수 (RV-12) */
+  readonly autoMoves: number;
   readonly bids: number;
   readonly autoBids: number;
   readonly abandoned: number;
@@ -73,6 +77,8 @@ export function emptyRaw(gameType: string): RawGameMetrics {
     attemptsN: 0,
     turnsSum: 0,
     bankruptGames: 0,
+    passGames: 0,
+    autoMoves: 0,
     bids: 0,
     autoBids: 0,
     abandoned: 0,
@@ -99,6 +105,12 @@ export function finalizeMetrics(raw: RawGameMetrics): GameMetrics {
     case 'one_card':
       extra.bankruptRate = rate(raw.bankruptGames);
       extra.avgTurns = avg(raw.turnsSum, n);
+      break;
+    case 'reversi':
+      extra.avgMoves = avg(raw.movesSum, n);
+      extra.passRate = rate(raw.passGames);
+      extra.autoMoveRate =
+        n >= MIN_GAMES_FOR_RATE && raw.movesSum > 0 ? round(raw.autoMoves / raw.movesSum, 3) : null;
       break;
     case GAME_ID:
       extra.autoBidRate = n >= MIN_GAMES_FOR_RATE && raw.bids > 0 ? round(raw.autoBids / raw.bids, 3) : null;
@@ -155,7 +167,9 @@ export class PgStatsStore implements StatsStore {
                 coalesce(sum((g.summary->'attempts'->>0)::numeric + (g.summary->'attempts'->>1)::numeric), 0) AS attempts,
                 count(*) FILTER (WHERE g.summary ? 'attempts') * 2 AS attempts_n,
                 coalesce(sum((g.summary->>'turnCount')::numeric), 0) AS turns,
-                count(*) FILTER (WHERE (g.summary->>'bankruptCount')::int > 0) AS bankrupt
+                count(*) FILTER (WHERE (g.summary->>'bankruptCount')::int > 0) AS bankrupt,
+                count(*) FILTER (WHERE (g.summary->>'passCount')::int > 0) AS passes,
+                coalesce(sum((g.summary->>'autoMoveCount')::numeric), 0) AS auto_moves
            FROM games g WHERE g.ended_at >= ${FROM_KST} GROUP BY 1`,
         [fromDay],
       ),
@@ -187,6 +201,8 @@ export class PgStatsStore implements StatsStore {
         attemptsN: num(r.attempts_n),
         turnsSum: num(r.turns),
         bankruptGames: num(r.bankrupt),
+        passGames: num(r.passes),
+        autoMoves: num(r.auto_moves),
       });
     }
     for (const r of bids.rows) out.set(r.t, { ...get(r.t), bids: num(r.n), autoBids: num(r.auto) });
@@ -329,6 +345,8 @@ export class MemoryStats implements StatsStore, GameRecorder {
       attemptsN: m.attemptsN + attempts.length,
       turnsSum: m.turnsSum + num(summary.turnCount),
       bankruptGames: m.bankruptGames + (num(summary.bankruptCount) > 0 ? 1 : 0),
+      passGames: m.passGames + (num(summary.passCount) > 0 ? 1 : 0),
+      autoMoves: m.autoMoves + num(summary.autoMoveCount),
       bids: m.bids + bids.length,
       autoBids: m.autoBids + bids.filter((b) => b.isAuto).length,
     }));

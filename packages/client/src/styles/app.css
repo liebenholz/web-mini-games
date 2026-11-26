@@ -2122,6 +2122,206 @@ button.game-main:focus-visible,
   outline: none;
 }
 
+/* ───── 리버시 (reversi.md 6장, 시안 2026-11-27). 틀은 오목 화면 클래스를 같이 쓴다 ───── */
+.rv-main {
+  /* 터치 확인 상자가 없어서 아래 여백이 작다 */
+  padding-bottom: calc(var(--space-3) + 24px);
+}
+
+.rv-board {
+  width: min(100%, 560px, calc(100dvh - 260px));
+  min-width: 280px;
+  aspect-ratio: 1;
+  height: auto;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 10px;
+}
+
+.rv-board.my-turn {
+  cursor: pointer;
+}
+
+.rv-board:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.rv-board:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.rv-board .felt {
+  fill: var(--rv-board);
+}
+
+.rv-board .edge {
+  fill: none;
+  stroke: var(--rv-board-edge);
+  stroke-width: 1.2;
+}
+
+.rv-board .grid line {
+  stroke: var(--rv-line);
+  stroke-width: 0.35;
+}
+
+.rv-board .star {
+  fill: var(--rv-line);
+}
+
+.rv-board .stone.black,
+.rv-board .ghost.black,
+.rv-board .legal.black {
+  fill: var(--ink);
+}
+
+.rv-board .stone.white,
+.rv-board .ghost.white,
+.rv-board .legal.white {
+  fill: #fff;
+}
+
+.rv-board .stone.white {
+  stroke: var(--ink);
+  stroke-width: 0.4;
+}
+
+.rv-board .stone {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* 뒤집기: 가로로 접혔다 펴지며 가운데에서 색이 바뀐다 (250ms, 지연은 화면 코드가 정한다) */
+.rv-board .stone.flip-to-black {
+  animation: rv-flip-to-black 250ms var(--ease-out) both;
+}
+
+.rv-board .stone.flip-to-white {
+  animation: rv-flip-to-white 250ms var(--ease-out) both;
+}
+
+@keyframes rv-flip-to-black {
+  0%,
+  49% {
+    fill: #fff;
+  }
+  0% {
+    transform: scaleX(1);
+  }
+  50% {
+    fill: var(--ink);
+    transform: scaleX(0.05);
+  }
+  100% {
+    fill: var(--ink);
+    transform: scaleX(1);
+  }
+}
+
+@keyframes rv-flip-to-white {
+  0%,
+  49% {
+    fill: var(--ink);
+  }
+  0% {
+    transform: scaleX(1);
+  }
+  50% {
+    fill: #fff;
+    transform: scaleX(0.05);
+  }
+  100% {
+    fill: #fff;
+    transform: scaleX(1);
+  }
+}
+
+.rv-board .legal {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.rv-board .ghost {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.rv-board .will-flip {
+  fill: none;
+  /* 흑돌·백돌 위 모두 보이게 */
+  stroke: var(--accent);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.rv-board .flipped {
+  fill: none;
+  stroke: var(--rv-flip-mark);
+  stroke-width: 0.7;
+  stroke-dasharray: 1.4 1;
+  pointer-events: none;
+}
+
+.rv-board .last-move {
+  fill: var(--danger);
+}
+
+.rv-board .cursor {
+  fill: #fff;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* 돌 수는 카드 오른쪽 위에 고정한다. 이름 줄이 접혀도 카드 높이와 판 위치가 흔들리지 않게 */
+.reversi .player-card {
+  position: relative;
+}
+
+.reversi .player-line {
+  padding-right: 40px;
+}
+
+.player-line .rv-count {
+  position: absolute;
+  top: 6px;
+  right: var(--space-3);
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.rv-score {
+  margin: var(--space-2) 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-4);
+  font-weight: 800;
+  font-size: 1.125rem;
+}
+
+.rv-score > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (min-width: 860px) {
+  .rv-board {
+    width: min(560px, calc(100dvh - 120px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-board .stone.flip-to-black,
+  .rv-board .stone.flip-to-white {
+    animation: none;
+  }
+}
+
 /* ───── 원카드 (one-card.md 11장, 시안) ───── */
 .fixed-rules {
   display: flex;

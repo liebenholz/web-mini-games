@@ -295,6 +295,8 @@ const EXTRA_LABELS: Readonly<Record<string, { label: string; kind: 'rate' | 'avg
   bankruptRate: { label: '파산이 나온 판', kind: 'rate' },
   avgTurns: { label: '평균 턴', kind: 'avg', unit: '턴' },
   autoBidRate: { label: '시간 초과로 대신 낸 선언', kind: 'rate' },
+  passRate: { label: '넘김이 나온 판', kind: 'rate' },
+  autoMoveRate: { label: '시간 초과로 대신 둔 수', kind: 'rate' },
 };
 
 const pct = (v: number | null) => (v === null ? '—' : `${Math.round(v * 100)}%`);

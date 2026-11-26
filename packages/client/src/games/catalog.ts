@@ -66,4 +66,14 @@ export const CATALOG: readonly GameCatalogEntry[] = [
     category: 'number',
     status: 'available',
   },
+  {
+    id: 'reversi',
+    name: '리버시',
+    tagline: '끼워서 뒤집고, 돌이 많은 쪽이 이겨요',
+    lead: '상대 돌을 내 돌 사이에 끼우면 내 색으로 뒤집혀요. 끝났을 때 돌이 많으면 이겨요.',
+    players: '2명',
+    minutes: '10분',
+    category: 'board',
+    status: 'available',
+  },
 ];
