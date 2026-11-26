@@ -5,7 +5,7 @@ import { GAMES, LEGACY_GAME_ID, type GameInfo } from './games/registry.js';
 import { savedNickname } from './identity.js';
 import type { GameFlow, GameSession } from './games/flow.js';
 import { installErrorReports, type ErrorContext } from './errorReport.js';
-import { describeError, JoinError } from './net.js';
+import { describeError, JoinError } from './joinErrors.js';
 import { invitePath, lobbyPath, parseRoute } from './routes.js';
 import { renderHub } from './screens/hub.js';
 import { renderLobby } from './screens/lobby.js';
@@ -19,10 +19,19 @@ import { fetchStats, recordVisit } from './statsApi.js';
 let session: GameSession | null = null;
 let teardown: (() => void) | null = null;
 
-/** 플레이할 수 있는 게임은 registry에 연결과 화면(flow)이 있다 */
-function flowOf(game: GameInfo): GameFlow {
-  if (!game.flow) throw new Error(`no flow for ${game.id}`);
-  return game.flow;
+const flows = new Map<string, Promise<GameFlow>>();
+
+/** 플레이할 수 있는 게임은 registry에 연결과 화면(flow)이 있다. 처음 부를 때 받아 두고 다시 쓴다 */
+function flowOf(game: GameInfo): Promise<GameFlow> {
+  if (!game.loadFlow) return Promise.reject(new Error(`no flow for ${game.id}`));
+  let flow = flows.get(game.id);
+  if (!flow) {
+    flow = game.loadFlow();
+    // 받기에 실패하면 다음에 다시 받는다
+    flow.catch(() => flows.delete(game.id));
+    flows.set(game.id, flow);
+  }
+  return flow;
 }
 
 function setTitle(game: GameInfo | null): void {
@@ -46,15 +55,16 @@ function showLobby(game: GameInfo, code: string | null = null, notice: string | 
   teardown?.();
   teardown = null;
   setTitle(game);
-  const flow = flowOf(game);
+  // 로비를 보는 동안 그 게임 코드를 미리 받는다
+  void flowOf(game).catch(() => undefined);
   mount(
     renderLobby(
       game,
       {
-        create: (n) => flow.create(n),
-        join: (c, n) => flow.join(c, n),
-        quickMatch: (n) => flow.quickMatch(n),
-        entered: (s) => enter(game, s),
+        create: async (n) => (await flowOf(game)).create(n),
+        join: async (c, n) => (await flowOf(game)).join(c, n),
+        quickMatch: async (n) => (await flowOf(game)).quickMatch(n),
+        entered: (s) => void flowOf(game).then((flow) => enter(game, s, flow)),
         back: () => navigate('/'),
       },
       code,
@@ -79,7 +89,7 @@ function exitToLobby(game: GameInfo, notice: string | null = null): void {
   showLobby(game, null, notice);
 }
 
-function enter(game: GameInfo, s: GameSession): void {
+function enter(game: GameInfo, s: GameSession, flow: GameFlow): void {
   session = s;
   const path = invitePath(game, s.roomCode);
   if (location.pathname !== path) history.replaceState(null, '', path);
@@ -91,7 +101,7 @@ function enter(game: GameInfo, s: GameSession): void {
     history.replaceState(null, '', lobbyPath(game));
     showLobby(game, null, reason ? describeError(reason) : '방이 닫혔습니다.');
   });
-  teardown = flowOf(game).mount(s, { exit: () => exitToLobby(game) });
+  teardown = flow.mount(s, { exit: () => exitToLobby(game) });
 }
 
 async function boot(): Promise<void> {
@@ -130,7 +140,8 @@ async function boot(): Promise<void> {
       h('main', { class: 'page narrow centered' }, h('div', { class: 'spinner', 'aria-label': '입장 중' })),
     );
     try {
-      enter(game, await flowOf(game).join(code, nickname));
+      const flow = await flowOf(game);
+      enter(game, await flow.join(code, nickname), flow);
       return;
     } catch (e) {
       showLobby(game, code, describeError(e instanceof JoinError ? e.code : 'NETWORK'));

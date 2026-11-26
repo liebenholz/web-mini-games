@@ -3,7 +3,7 @@ import { h, svg } from '../dom.js';
 import type { GameInfo } from '../games/registry.js';
 import { boardStonesSvg, cardTileSvg, dieSvg, icons, textTileSvg } from '../icons.js';
 import type { GameSession } from '../games/flow.js';
-import { describeError, JoinError } from '../net.js';
+import { describeError, JoinError } from '../joinErrors.js';
 import { saveNickname, savedNickname } from '../identity.js';
 import { rulesButton } from './rulesSheet.js';
 

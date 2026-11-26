@@ -1,9 +1,6 @@
 import type { Room } from '@colyseus/sdk';
 import { oneCard } from '@wmg/rules';
-import { toast } from '../../dom.js';
-import { guestId } from '../../identity.js';
-import { watchReconnect } from '../../errorReport.js';
-import { closeReason, describeError, JoinError, joinFailure, sdk } from '../../net.js';
+import { connectSession, RoomSession, type BaseSnapshot, type PlayerNotice } from '../roomSession.js';
 
 export interface OneCardPlayerView {
   readonly id: string;
@@ -50,12 +47,7 @@ export interface OneCardView {
   readonly windowClosesAt: number;
 }
 
-export interface OneCardNotice {
-  readonly playerId: string;
-  readonly nickname: string;
-  readonly reason: oneCard.ReplaceReason;
-  readonly at: number;
-}
+export type OneCardNotice = PlayerNotice;
 
 /** 원카드 창 판정 결과 (C-31) */
 export interface OneCardCall {
@@ -66,13 +58,7 @@ export interface OneCardCall {
   readonly at: number;
 }
 
-export interface OneCardSnapshot {
-  readonly view: OneCardView;
-  readonly me: string;
-  readonly role: 'player' | 'spectator';
-  readonly clockOffset: number;
-  readonly notice: OneCardNotice | null;
-  readonly connection: 'online' | 'reconnecting';
+export interface OneCardSnapshot extends BaseSnapshot<OneCardView> {
   /** 내 패 (본인에게만 온다) */
   readonly hand: readonly string[];
   /** C-14: 이번 차례에 가져온 카드. 이 카드만 낼 수 있다 */
@@ -99,146 +85,56 @@ function readView(state: SchemaLike): OneCardView {
   };
 }
 
-/** 원카드 방 하나와의 연결 (docs/specs/one-card.md 9장). 내 패는 your_hand로만 온다 (C-40) */
-export class OneCardSession {
-  #listeners = new Set<(s: OneCardSnapshot) => void>();
-  #closed = new Set<(reason: string | null) => void>();
-  #snapshot: OneCardSnapshot;
-
-  private constructor(readonly room: Room) {
-    this.#snapshot = {
-      view: readView(room.state as SchemaLike),
-      me: '',
-      role: 'player',
-      clockOffset: 0,
-      notice: null,
-      connection: 'online',
-      hand: [],
-      drawn: null,
-      call: null,
-      ranking: [],
-    };
-    room.reconnection.maxRetries = 30;
-    room.onStateChange((state) => this.#update({ view: readView(state as SchemaLike) }));
-    room.onMessage('*', (type, payload) => this.#onMessage(String(type), payload as Record<string, unknown>));
-    watchReconnect(room);
-    room.onDrop(() => this.#update({ connection: 'reconnecting' }));
-    room.onReconnect(() => this.#update({ connection: 'online' }));
-    room.onLeave((code) => {
-      const reason = closeReason(code);
-      for (const fn of this.#closed) fn(reason);
-    });
+/** 원카드 방 하나와의 연결 (docs/specs/one-card.md). 연결 공통 부분은 RoomSession (ADR 0003) */
+export class OneCardSession extends RoomSession<OneCardView, OneCardSnapshot> {
+  private constructor(room: Room) {
+    super(room, (state) => readView(state as SchemaLike), { hand: [], drawn: null, call: null, ranking: [] });
   }
 
-  static async create(
+  static create(
     nickname: string,
     options: Partial<oneCard.OneCardRoomOptions> = {},
   ): Promise<OneCardSession> {
-    try {
-      const room = await sdk().create(oneCard.ONE_CARD_ROOM_TYPE, { guestId: guestId(), nickname, options });
-      return await new OneCardSession(room).#ready();
-    } catch (error) {
-      throw joinFailure(error);
-    }
+    return connectSession(
+      oneCard.ONE_CARD_ROOM_TYPE,
+      nickname,
+      { kind: 'create', options },
+      (r) => new OneCardSession(r),
+    );
   }
 
-  static async join(code: string, nickname: string): Promise<OneCardSession> {
-    try {
-      const room = await sdk().joinById(code, { guestId: guestId(), nickname });
-      // 방 코드는 모든 게임이 같은 공간을 쓴다 (ADR 0002)
-      if (room.name !== oneCard.ONE_CARD_ROOM_TYPE) {
-        void room.leave(true).catch(() => undefined);
-        throw new JoinError('ROOM_NOT_FOUND');
-      }
-      return await new OneCardSession(room).#ready();
-    } catch (error) {
-      throw joinFailure(error);
-    }
+  static join(code: string, nickname: string): Promise<OneCardSession> {
+    return connectSession(
+      oneCard.ONE_CARD_ROOM_TYPE,
+      nickname,
+      { kind: 'join', code },
+      (r) => new OneCardSession(r),
+    );
   }
 
-  static async quickMatch(nickname: string): Promise<OneCardSession> {
-    try {
-      const room = await sdk().joinOrCreate(oneCard.ONE_CARD_ROOM_TYPE, {
-        guestId: guestId(),
-        nickname,
-        options: { isPrivate: false },
-      });
-      return await new OneCardSession(room).#ready();
-    } catch (error) {
-      throw joinFailure(error);
-    }
-  }
-
-  get snapshot(): OneCardSnapshot {
-    return this.#snapshot;
-  }
-
-  get roomCode(): string {
-    return this.#snapshot.view.roomCode || this.room.roomId;
-  }
-
-  serverNow(): number {
-    return Date.now() + this.#snapshot.clockOffset;
-  }
-
-  subscribe(fn: (s: OneCardSnapshot) => void): () => void {
-    this.#listeners.add(fn);
-    fn(this.#snapshot);
-    return () => this.#listeners.delete(fn);
-  }
-
-  onClosed(fn: (reason: string | null) => void): () => void {
-    this.#closed.add(fn);
-    return () => this.#closed.delete(fn);
+  static quickMatch(nickname: string): Promise<OneCardSession> {
+    return connectSession(
+      oneCard.ONE_CARD_ROOM_TYPE,
+      nickname,
+      { kind: 'quick' },
+      (r) => new OneCardSession(r),
+    );
   }
 
   send<T extends oneCard.OneCardClientMessageType>(type: T, payload: oneCard.OneCardClientMessages[T]): void {
     this.room.send(type, payload);
   }
 
-  async leave(): Promise<void> {
-    await this.room.leave(true).catch(() => undefined);
-  }
-
-  #ready(): Promise<OneCardSession> {
-    return new Promise((resolve, reject) => {
-      const timer = window.setTimeout(() => reject(new JoinError('NETWORK')), 8000);
-      const check = (s: OneCardSnapshot) => {
-        if (!s.me) return;
-        window.clearTimeout(timer);
-        this.#listeners.delete(check);
-        resolve(this);
-      };
-      this.#listeners.add(check);
-    });
-  }
-
-  #onMessage(type: string, p: Record<string, unknown>): void {
+  protected onGameMessage(type: string, p: Record<string, unknown>): void {
     switch (type) {
-      case 'welcome':
-        this.#update({ me: String(p.playerId), role: p.role === 'spectator' ? 'spectator' : 'player' });
-        break;
-      case 'turn_start':
-        this.#update({ clockOffset: Number(p.serverNow) - Date.now() });
-        break;
-      case 'player_replaced':
-        this.#update({
-          notice: {
-            playerId: String(p.playerId),
-            nickname: String(p.nickname),
-            reason: p.reason as oneCard.ReplaceReason,
-            at: Date.now(),
-          },
-        });
-        break;
       case 'your_hand':
-        this.#update({
+        this.update({
           hand: Array.isArray(p.cards) ? (p.cards as string[]) : [],
           drawn: typeof p.drawn === 'string' ? p.drawn : null,
         });
         break;
       case 'one_card_called':
-        this.#update({
+        this.update({
           call: {
             windowId: String(p.windowId),
             callerId: typeof p.callerId === 'string' ? p.callerId : null,
@@ -249,18 +145,8 @@ export class OneCardSession {
         });
         break;
       case 'game_over':
-        this.#update({ ranking: Array.isArray(p.ranking) ? (p.ranking as OneCardSnapshot['ranking']) : [] });
-        break;
-      case 'error':
-        toast(describeError(String(p.code)));
-        break;
-      default:
+        this.update({ ranking: Array.isArray(p.ranking) ? (p.ranking as OneCardSnapshot['ranking']) : [] });
         break;
     }
-  }
-
-  #update(patch: Partial<OneCardSnapshot>): void {
-    this.#snapshot = { ...this.#snapshot, ...patch };
-    for (const fn of [...this.#listeners]) fn(this.#snapshot);
   }
 }

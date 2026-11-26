@@ -1,13 +1,9 @@
 import { bulls, GAME_ID, gomoku, oneCard } from '@wmg/rules';
-import { bullsFlow } from './bulls-and-cows/flow.js';
 import { bullsRules } from './bulls-and-cows/rules.js';
 import { CATALOG, type GameCatalogEntry } from './catalog.js';
 import { asFlow, type GameFlow } from './flow.js';
-import { gomokuFlow } from './gomoku/flow.js';
 import { gomokuRules } from './gomoku/rules.js';
-import { liarsDiceFlow } from './liars-dice/flow.js';
 import { liarsDiceRules } from './liars-dice/rules.js';
-import { oneCardFlow } from './one-card/flow.js';
 import { oneCardRules } from './one-card/rules.js';
 
 export type { GameCategory } from './catalog.js';
@@ -18,16 +14,35 @@ export interface GameInfo extends GameCatalogEntry {
   /** 서버 방 종류. 준비 중인 게임은 없다 */
   readonly roomType: string | null;
   readonly rules: (() => HTMLElement) | null;
-  /** 연결과 화면. 준비 중인 게임은 없다 */
-  readonly flow: GameFlow | null;
+  /**
+   * 연결과 화면을 불러온다 (ADR 0003: 게임 코드는 그 게임에 들어갈 때 받는다). 준비 중인 게임은 없다.
+   * 메인 번들은 게임 수와 상관없이 일정하다
+   */
+  readonly loadFlow: (() => Promise<GameFlow>) | null;
 }
 
 /** 구현된 게임의 서버 방 종류와 규칙 내용. 게임을 추가하면 여기에 한 줄 넣고 catalog의 상태를 바꾼다 */
-const IMPLEMENTED: Record<string, Pick<GameInfo, 'roomType' | 'rules' | 'flow'>> = {
-  'liars-dice': { roomType: GAME_ID, rules: liarsDiceRules, flow: asFlow(liarsDiceFlow) },
-  gomoku: { roomType: gomoku.GOMOKU_ROOM_TYPE, rules: gomokuRules, flow: asFlow(gomokuFlow) },
-  'one-card': { roomType: oneCard.ONE_CARD_ROOM_TYPE, rules: oneCardRules, flow: asFlow(oneCardFlow) },
-  'bulls-and-cows': { roomType: bulls.BULLS_ROOM_TYPE, rules: bullsRules, flow: asFlow(bullsFlow) },
+const IMPLEMENTED: Record<string, Pick<GameInfo, 'roomType' | 'rules' | 'loadFlow'>> = {
+  'liars-dice': {
+    roomType: GAME_ID,
+    rules: liarsDiceRules,
+    loadFlow: () => import('./liars-dice/flow.js').then((m) => asFlow(m.liarsDiceFlow)),
+  },
+  gomoku: {
+    roomType: gomoku.GOMOKU_ROOM_TYPE,
+    rules: gomokuRules,
+    loadFlow: () => import('./gomoku/flow.js').then((m) => asFlow(m.gomokuFlow)),
+  },
+  'one-card': {
+    roomType: oneCard.ONE_CARD_ROOM_TYPE,
+    rules: oneCardRules,
+    loadFlow: () => import('./one-card/flow.js').then((m) => asFlow(m.oneCardFlow)),
+  },
+  'bulls-and-cows': {
+    roomType: bulls.BULLS_ROOM_TYPE,
+    rules: bullsRules,
+    loadFlow: () => import('./bulls-and-cows/flow.js').then((m) => asFlow(m.bullsFlow)),
+  },
 };
 
 export const GAMES: readonly GameInfo[] = CATALOG.map((entry) => {
@@ -35,7 +50,7 @@ export const GAMES: readonly GameInfo[] = CATALOG.map((entry) => {
   // 코드가 없는 게임은 catalog에 "플레이 가능"으로 적혀 있어도 준비 중으로 보인다
   return impl
     ? { ...entry, ...impl }
-    : { ...entry, status: 'coming-soon', roomType: null, rules: null, flow: null };
+    : { ...entry, status: 'coming-soon', roomType: null, rules: null, loadFlow: null };
 });
 
 export function findGame(id: string): GameInfo | undefined {
