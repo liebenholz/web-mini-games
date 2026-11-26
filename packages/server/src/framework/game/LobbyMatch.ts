@@ -26,6 +26,16 @@ export const fail = (code: ErrorCode, message: string): HandleResult => ({ ok: f
 
 export type ReplaceReason = 'left' | 'disconnected' | 'returned';
 
+/** 대기실 공통 문구 중 게임마다 다르게 쓰는 것 */
+export type LobbyTextKey = 'alreadyStarted' | 'notAllReady' | 'rematchNotOver' | 'rematchAbsent';
+
+const LOBBY_TEXT: Record<LobbyTextKey, string> = {
+  alreadyStarted: '이미 시작했습니다.',
+  notAllReady: '모두 준비해야 시작할 수 있습니다.',
+  rematchNotOver: '게임이 끝난 뒤에만 다시 할 수 있습니다.',
+  rematchAbsent: '방에 없습니다.',
+};
+
 /** 엔진 → 네트워크 공통 부분. 방 어댑터(GameRoom)가 구현한다 */
 export interface LobbyIO {
   /** 사람이 모두 나갔다. 방을 닫는다 (기록하지 않음) */
@@ -117,7 +127,8 @@ export abstract class LobbyMatch<
   #cancelPhase: (() => void) | null = null;
   #joinCounter = 0;
   #botCounter = 0;
-  #listed = false;
+  /** 매칭 목록 노출 상태. null이면 첫 updateListing에서 무조건 알린다 */
+  protected listed: boolean | null = false;
 
   protected constructor(state: S, roomCode: string, options: O, deps: LobbyDeps<IO>) {
     this.state = state;
@@ -166,6 +177,14 @@ export abstract class LobbyMatch<
   protected minPlayers(): number {
     return 2;
   }
+
+  /** 게임마다 다르게 쓰는 대기실 문구 */
+  protected lobbyText(key: LobbyTextKey): string {
+    return LOBBY_TEXT[key];
+  }
+
+  /** 시작을 누른 순간(카운트다운 전) 할 일. 기본은 없음 */
+  protected onStarting(): void {}
 
   /** 인원이 모자라 시작할 수 없을 때의 문구 */
   protected notEnoughPlayersMessage(): string {
@@ -360,15 +379,17 @@ export abstract class LobbyMatch<
 
   /** 시작 조건: 방장, 전원 준비, 최소 인원. 빈자리 봇 채우기가 켜져 있으면 정원까지 채운다 */
   protected startGame(m: M): HandleResult {
-    if (this.phase !== 'WAITING') return fail('INVALID_STATE', '이미 시작했습니다.');
+    if (this.phase !== 'WAITING') return fail('INVALID_STATE', this.lobbyText('alreadyStarted'));
     if (this.state.hostId !== m.id) return fail('NOT_HOST', '방장만 시작할 수 있습니다.');
     const seated = this.seated();
+    // 방장은 시작 버튼을 누르는 것으로 준비한 것으로 본다
     if (seated.some((x) => x.controller === 'human' && !x.ready && x.id !== m.id))
-      return fail('NOT_ALL_READY', '모두 준비해야 시작할 수 있습니다.');
+      return fail('NOT_ALL_READY', this.lobbyText('notAllReady'));
     if (seated.length < this.minPlayers() && !this.opts.fillWithBots)
       return fail('NOT_ENOUGH_PLAYERS', this.notEnoughPlayersMessage());
     if (this.opts.fillWithBots) while (this.seated().length < this.maxSeats()) this.addBotMember();
     this.setPhase('STARTING');
+    this.onStarting();
     this.updateListing();
     this.state.phaseEndsAt = this.scheduler.now() + this.timing.startCountdownMs;
     this.setPhaseTimer(this.timing.startCountdownMs, () => this.beginGame());
@@ -380,8 +401,8 @@ export abstract class LobbyMatch<
    * 정원을 넘는 사람은 관전자로, 봇은 뺀다
    */
   protected rematch(m: M): HandleResult {
-    if (!this.isGameOver()) return fail('INVALID_STATE', '게임이 끝난 뒤에만 다시 할 수 있습니다.');
-    if (!m.present) return fail('INVALID_STATE', '방에 없습니다.');
+    if (!this.isGameOver()) return fail('INVALID_STATE', this.lobbyText('rematchNotOver'));
+    if (!m.present) return fail('INVALID_STATE', this.lobbyText('rematchAbsent'));
     const stay: M[] = [];
     for (const x of [...this.members.values()]) {
       if (!x.originallyBot && !x.present) this.removeMember(x);
@@ -422,10 +443,9 @@ export abstract class LobbyMatch<
   }
 
   /** 봇 행동 타이머 (1~3초 지연, S-12). 새로 걸면 이전 것은 취소한다 */
-  protected setBotTimer(fn: () => void): void {
+  protected setBotTimer(fn: () => void, delayMs?: number): void {
     this.#cancelBot?.();
-    const span = Math.max(0, this.timing.botDelayMaxMs - this.timing.botDelayMinMs);
-    const delay = this.timing.botDelayMinMs + (span > 0 ? this.rng.int(span + 1) : 0);
+    const delay = delayMs ?? this.botDelay();
     this.#cancelBot = this.scheduler.after(delay, () => {
       this.#cancelBot = null;
       fn();
@@ -444,6 +464,12 @@ export abstract class LobbyMatch<
   protected clearPhaseTimer(): void {
     this.#cancelPhase?.();
     this.#cancelPhase = null;
+  }
+
+  /** 봇 지연: 최소~최대 사이 무작위 */
+  protected botDelay(): number {
+    const span = Math.max(0, this.timing.botDelayMaxMs - this.timing.botDelayMinMs);
+    return this.timing.botDelayMinMs + (span > 0 ? this.rng.int(span + 1) : 0);
   }
 
   protected clearTurnTimers(): void {
@@ -557,8 +583,8 @@ export abstract class LobbyMatch<
   /** 공개 방이고, 대기실이고, 자리가 남았을 때만 랜덤 매칭 목록에 보인다 */
   protected updateListing(): void {
     const listed = !this.opts.isPrivate && this.phase === 'WAITING' && this.seated().length < this.maxSeats();
-    if (listed !== this.#listed) {
-      this.#listed = listed;
+    if (listed !== this.listed) {
+      this.listed = listed;
       this.io.onListingChange(listed);
     }
   }
