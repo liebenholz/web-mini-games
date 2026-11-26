@@ -30,7 +30,7 @@ import {
   type ServerMessages,
   type TableState,
 } from '@wmg/rules';
-import type { Rng } from '../../framework/rng.js';
+import { rollDie, type Rng } from '../../framework/rng.js';
 import type { Scheduler } from '../../framework/scheduler.js';
 import type { BidRecord, GameRecord, RoundRecord } from '../../persistence/types.js';
 import { BidState, LiarsDiceState, PlayerState } from './state.js';
@@ -496,7 +496,7 @@ export class LiarsDiceMatch {
     // S-03: 생존자 주사위를 동시에 굴리고 각자에게만 보낸다 (S-01)
     for (const p of this.#seated()) {
       const count = findPlayer(table, p.seat)?.diceCount ?? 0;
-      p.dice = Array.from({ length: count }, () => (this.#rng.int(6) + 1) as DieFace);
+      p.dice = Array.from({ length: count }, () => rollDie(this.#rng));
     }
     for (const p of this.#seated()) {
       if (p.dice.length > 0) this.#sendTo(p.id, 'your_dice', { dice: [...p.dice] });

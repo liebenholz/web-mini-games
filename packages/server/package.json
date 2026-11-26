@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "node dist/scripts/migrate.js",
     "replay": "tsx --conditions=source src/scripts/replay.ts",
-    "loadtest": "tsx --conditions=source loadtest/run.ts"
+    "loadtest": "tsx --conditions=source loadtest/run.ts",
+    "rng-check": "tsx --conditions=source src/scripts/rng-check.ts"
   },
   "dependencies": {
     "@colyseus/core": "^0.18.29",

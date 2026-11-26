@@ -59,6 +59,7 @@ pnpm --filter client e2e  # Playwright E2E (서버·클라이언트를 E2E 포�
 pnpm --filter server db:migrate  # DB 마이그레이션 (DATABASE_URL 필요, 빌드 후)
 pnpm --filter server replay      # 저장된 판을 룰로 재현·검증 (DATABASE_URL 필요)
 pnpm --filter server loadtest -- --url <ws주소> --stages 10,25,50  # M6 부하 테스트 (docs/ops/load-test.md)
+pnpm --filter server rng-check -- --n 100000  # TC-15 난수 분포 검증 (카이제곱)
 pnpm lint && pnpm typecheck
 pnpm format               # Prettier
 ```

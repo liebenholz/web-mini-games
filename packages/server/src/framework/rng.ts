@@ -15,6 +15,21 @@ export const cryptoRng: Rng = {
   id: () => randomUUID(),
 };
 
+/** S-03: 주사위 하나 (1~6). 거짓말쟁이 주사위가 쓰고 TC-15 검증 스크립트가 같은 함수를 잰다 */
+export function rollDie(rng: Rng): 1 | 2 | 3 | 4 | 5 | 6 {
+  return (rng.int(6) + 1) as 1 | 2 | 3 | 4 | 5 | 6;
+}
+
+/** Fisher-Yates. 원본은 바꾸지 않는다. 원카드 덱 섞기에 쓴다 */
+export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = rng.int(i + 1);
+    [a[i], a[j]] = [a[j] as T, a[i] as T];
+  }
+  return a;
+}
+
 /**
  * 테스트 전용 시드 난수 (S-04). mulberry32.
  * `assertTestSeedAllowed`를 통과한 경우에만 만들 수 있다.
