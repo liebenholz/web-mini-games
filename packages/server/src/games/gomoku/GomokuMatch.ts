@@ -254,7 +254,8 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
     if (body.turnId !== this.#turnId) return fail('STALE_TURN', '이미 지난 차례입니다.');
     const x = body.x;
     const y = body.y;
-    if (typeof x !== 'number' || typeof y !== 'number') return fail('INVALID_MOVE', '좌표가 올바르지 않습니다.');
+    if (typeof x !== 'number' || typeof y !== 'number')
+      return fail('INVALID_MOVE', '좌표가 올바르지 않습니다.');
     const check = gomoku.checkPlace(this.#board, { x, y }, m.color, this.opts);
     if (!check.ok) {
       const message =

@@ -19,8 +19,7 @@ export type JoinResult =
   | { readonly ok: false; readonly code: ErrorCode };
 
 export type HandleResult =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly code: ErrorCode; readonly message: string };
+  { readonly ok: true } | { readonly ok: false; readonly code: ErrorCode; readonly message: string };
 
 export const OK: HandleResult = { ok: true };
 export const fail = (code: ErrorCode, message: string): HandleResult => ({ ok: false, code, message });

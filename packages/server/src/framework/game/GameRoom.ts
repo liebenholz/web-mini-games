@@ -96,7 +96,9 @@ export abstract class GameRoom<M extends MatchLike, O> extends Room<{ state: M['
     activeRooms.add(this);
 
     for (const type of [...LOBBY_MESSAGES, ...this.gameMessages]) {
-      this.onMessage(type, (client: Client, payload: unknown) => this.#onClientMessage(client, type, payload));
+      this.onMessage(type, (client: Client, payload: unknown) =>
+        this.#onClientMessage(client, type, payload),
+      );
     }
   }
 
@@ -114,7 +116,10 @@ export abstract class GameRoom<M extends MatchLike, O> extends Room<{ state: M['
       const previous = this.#playerToClient.get(result.playerId);
       if (previous && previous.sessionId !== client.sessionId) {
         this.#sessionToPlayer.delete(previous.sessionId);
-        previous.send('error', this.errorPayload('DUPLICATE_SESSION', '다른 탭에서 접속해 이 연결을 닫습니다.'));
+        previous.send(
+          'error',
+          this.errorPayload('DUPLICATE_SESSION', '다른 탭에서 접속해 이 연결을 닫습니다.'),
+        );
         previous.leave(CLOSE_CODES.DUPLICATE_SESSION);
       }
       const pending = this.#reconnections.get(result.playerId);
@@ -193,7 +198,10 @@ export abstract class GameRoom<M extends MatchLike, O> extends Room<{ state: M['
       client.send('error', this.errorPayload('RATE_LIMITED', '요청이 너무 많아 연결을 끊습니다.'));
       client.leave(CLOSE_CODES.RATE_LIMITED);
     } else if (this.#rate.isFirstDrop(client.sessionId)) {
-      client.send('error', this.errorPayload('RATE_LIMITED', '요청이 너무 많습니다. 잠시 후 다시 시도하세요.'));
+      client.send(
+        'error',
+        this.errorPayload('RATE_LIMITED', '요청이 너무 많습니다. 잠시 후 다시 시도하세요.'),
+      );
     }
     return false;
   }
