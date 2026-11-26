@@ -1,5 +1,5 @@
 import { normalizeNickname, oneCard, type ErrorCode } from '@wmg/rules';
-import type { Rng } from '../../framework/rng.js';
+import { shuffle, type Rng } from '../../framework/rng.js';
 import type { Scheduler } from '../../framework/scheduler.js';
 import type { Timing } from '../liars-dice/LiarsDiceMatch.js';
 import { OneCardPlayerState, OneCardState } from './state.js';
@@ -753,12 +753,7 @@ export class OneCardMatch {
 
   /** Fisher-Yates. 난수는 서버 rng(crypto)만 쓴다 (CLAUDE.md 원칙 5) */
   #shuffle(cards: readonly Card[]): Card[] {
-    const a = [...cards];
-    for (let i = a.length - 1; i > 0; i -= 1) {
-      const j = this.#rng.int(i + 1);
-      [a[i], a[j]] = [a[j] as Card, a[i] as Card];
-    }
-    return a;
+    return shuffle(cards, this.#rng);
   }
 
   /** 공유 상태: 공개 정보만 (C-41) */
