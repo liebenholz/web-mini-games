@@ -30,7 +30,7 @@ describe('통계 그래프 계산 (docs/specs/stats.md)', () => {
   });
 
   it('/stats 는 통계 화면', () => {
-    const games = CATALOG.map((g) => ({ ...g, roomType: g.id, rules: null, flow: null }));
+    const games = CATALOG.map((g) => ({ ...g, roomType: g.id, rules: null, loadFlow: null }));
     expect(parseRoute('/stats', games, 'liars-dice').kind).toBe('stats');
     expect(parseRoute('/stats/x', games, 'liars-dice').kind).toBe('not-found');
   });

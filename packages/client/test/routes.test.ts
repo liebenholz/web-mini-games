@@ -8,7 +8,7 @@ const games: GameInfo[] = [
     ...g,
     roomType: g.status === 'available' ? g.id : null,
     rules: null,
-    flow: null,
+    loadFlow: null,
   })),
   // 지금 카탈로그에는 준비 중인 게임이 없다. 준비 중 처리를 계속 검사하려고 가짜 항목을 둔다
   {
@@ -22,7 +22,7 @@ const games: GameInfo[] = [
     status: 'coming-soon' as const,
     roomType: null,
     rules: null,
-    flow: null,
+    loadFlow: null,
   },
 ];
 const route = (path: string) => parseRoute(path, games, 'liars-dice');
