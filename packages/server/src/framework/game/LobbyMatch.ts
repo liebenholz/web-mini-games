@@ -65,8 +65,11 @@ export interface LobbyMember<V> {
   readonly nickname: string;
   readonly joinOrder: number;
   readonly originallyBot: boolean;
-  /** 지금 이 자리를 누가 두는가 */
-  controller: 'human' | 'bot';
+  /**
+   * 지금 이 자리를 누가 두는가. autopilot = 시간 초과가 이어져 봇이 대신 두는 사람 (S-07, B-32, C-52),
+   * bot = 봇 또는 나간 사람 자리
+   */
+  controller: 'human' | 'autopilot' | 'bot';
   /** 사람이 방 안에 있거나 재접속 대기 중 */
   present: boolean;
   spectator: boolean;
@@ -162,6 +165,24 @@ export abstract class LobbyMatch<
   /** 시작에 필요한 최소 인원 */
   protected minPlayers(): number {
     return 2;
+  }
+
+  /** 인원이 모자라 시작할 수 없을 때의 문구 */
+  protected notEnoughPlayersMessage(): string {
+    const min = this.minPlayers();
+    return min === this.maxSeats() ? `${min}명이 필요합니다.` : `${min}명 이상이 필요합니다.`;
+  }
+
+  /** set_options: 형식 검증을 통과한 새 옵션을 지금 방 상태와 맞춰 본다. 거절하면 사용자 문구 */
+  protected checkOptions(_next: O): string | null {
+    return null;
+  }
+
+  /**
+   * 리매치에서 자리를 지킬 순서 (앞에서부터 정원까지 앉는다). 기본: 사람 먼저, 그다음 들어온 순서
+   */
+  protected rematchOrder(a: M, b: M): number {
+    return Number(a.originallyBot) - Number(b.originallyBot) || a.joinOrder - b.joinOrder;
   }
 
   // ───────────── 상태 ─────────────
@@ -297,6 +318,8 @@ export abstract class LobbyMatch<
     if (this.state.hostId !== m.id) return fail('NOT_HOST', '방장만 옵션을 바꿀 수 있습니다.');
     const parsed = this.parseOptions(body.options);
     if (!parsed.ok) return fail('INVALID_OPTIONS', '옵션 값이 올바르지 않습니다.');
+    const problem = this.checkOptions(parsed.options);
+    if (problem) return fail('INVALID_OPTIONS', problem);
     this.opts = parsed.options;
     this.writeOptions();
     this.updateListing();
@@ -342,49 +365,45 @@ export abstract class LobbyMatch<
     const seated = this.seated();
     if (seated.some((x) => x.controller === 'human' && !x.ready && x.id !== m.id))
       return fail('NOT_ALL_READY', '모두 준비해야 시작할 수 있습니다.');
-    const min = this.minPlayers();
-    if (seated.length < min && !this.opts.fillWithBots) {
-      const need = min === this.maxSeats() ? `${min}명이 필요합니다.` : `${min}명 이상이 필요합니다.`;
-      return fail('NOT_ENOUGH_PLAYERS', need);
-    }
+    if (seated.length < this.minPlayers() && !this.opts.fillWithBots)
+      return fail('NOT_ENOUGH_PLAYERS', this.notEnoughPlayersMessage());
     if (this.opts.fillWithBots) while (this.seated().length < this.maxSeats()) this.addBotMember();
     this.setPhase('STARTING');
     this.updateListing();
     this.state.phaseEndsAt = this.scheduler.now() + this.timing.startCountdownMs;
-    this.#cancelPhase = this.scheduler.after(this.timing.startCountdownMs, () => {
-      this.#cancelPhase = null;
-      this.beginGame();
-    });
+    this.setPhaseTimer(this.timing.startCountdownMs, () => this.beginGame());
     return OK;
   }
 
-  /** 같은 방 대기실로. 나간 사람(봇이 이어받은 자리)은 정리하고, 정원을 넘는 자리는 관전자로 돌린다 */
+  /**
+   * 같은 방 대기실로. 나간 사람(봇이 이어받은 자리)은 정리하고, rematchOrder 순서로 정원까지 앉힌다.
+   * 정원을 넘는 사람은 관전자로, 봇은 뺀다
+   */
   protected rematch(m: M): HandleResult {
     if (!this.isGameOver()) return fail('INVALID_STATE', '게임이 끝난 뒤에만 다시 할 수 있습니다.');
     if (!m.present) return fail('INVALID_STATE', '방에 없습니다.');
+    const stay: M[] = [];
     for (const x of [...this.members.values()]) {
-      if (!x.originallyBot && !x.present) {
-        this.removeMember(x);
-        continue;
-      }
-      this.resetMemberForRematch(x);
-      x.spectator = false;
-      x.view.spectator = false;
-      if (x.controller === 'human') {
-        x.ready = x.id === this.state.hostId;
-        x.view.ready = x.ready;
-      }
+      if (!x.originallyBot && !x.present) this.removeMember(x);
+      else stay.push(x);
     }
-    const seated = this.seated().sort(
-      (a, b) => Number(a.originallyBot) - Number(b.originallyBot) || a.joinOrder - b.joinOrder,
-    );
-    seated.slice(this.maxSeats()).forEach((x) => {
-      if (x.originallyBot) this.removeMember(x);
-      else {
-        x.spectator = true;
-        x.view.spectator = true;
-      }
-    });
+    const max = this.maxSeats();
+    stay
+      .sort((a, b) => this.rematchOrder(a, b))
+      .forEach((x, i) => {
+        if (x.controller === 'autopilot') x.controller = 'human';
+        this.resetMemberForRematch(x);
+        if (i >= max && x.originallyBot) {
+          this.removeMember(x);
+          return;
+        }
+        x.spectator = i >= max;
+        x.view.spectator = x.spectator;
+        if (x.controller === 'human') {
+          x.ready = x.id === this.state.hostId;
+          x.view.ready = x.ready;
+        }
+      });
     this.resetGameForRematch();
     this.setPhase('WAITING');
     this.updateListing();
@@ -413,6 +432,20 @@ export abstract class LobbyMatch<
     });
   }
 
+  /** 단계 타이머 (시작 카운트다운, 비밀 숫자 마감 등). 새로 걸면 이전 것은 취소한다 */
+  protected setPhaseTimer(delayMs: number, fn: () => void): void {
+    this.#cancelPhase?.();
+    this.#cancelPhase = this.scheduler.after(delayMs, () => {
+      this.#cancelPhase = null;
+      fn();
+    });
+  }
+
+  protected clearPhaseTimer(): void {
+    this.#cancelPhase?.();
+    this.#cancelPhase = null;
+  }
+
   protected clearTurnTimers(): void {
     this.#cancelTurn?.();
     this.#cancelBot?.();
@@ -439,8 +472,7 @@ export abstract class LobbyMatch<
     if (this.disposed) return;
     this.disposed = true;
     this.clearTurnTimers();
-    this.#cancelPhase?.();
-    this.#cancelPhase = null;
+    this.clearPhaseTimer();
   }
 
   // ───────────── 구성원 ─────────────
