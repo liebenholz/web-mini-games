@@ -21,10 +21,35 @@ export interface DailyStats {
   readonly clientErrors: Readonly<Record<string, number>>;
 }
 
+/** ST-11: 판 수가 이보다 적은 게임은 비율을 null로 보낸다 */
+export const MIN_GAMES_FOR_RATE = 5;
+
+/**
+ * ST-10: 기간 안에 끝난 판으로 센 게임별 지표. 비율은 0~1.
+ * extra 키: 오목 timeoutRate·avgMoves, 숫자야구 avgAttempts·drawRate, 원카드 bankruptRate·avgTurns,
+ * 거짓말쟁이 주사위 autoBidRate
+ */
+export interface GameMetrics {
+  /** 서버 방 종류 (liars_dice, gomoku …) */
+  readonly gameType: string;
+  readonly games: number;
+  /** 시작부터 끝까지 평균 (분). 판이 없으면 null */
+  readonly avgMinutes: number | null;
+  /** ST-08: 게임 중 봇이 자리를 이어받은 판의 비율 */
+  readonly replacedRate: number | null;
+  /** ST-09: 사람이 모두 나가 기록 없이 끝난 판 수 */
+  readonly abandoned: number;
+  /** 처음부터 봇 자리가 있던 판의 비율 */
+  readonly botRate: number | null;
+  readonly extra: Readonly<Record<string, number | null>>;
+}
+
 export interface StatsResponse {
   readonly range: StatsRange;
   /** 오래된 날부터 오늘까지, 빠진 날 없이 range개 */
   readonly days: readonly DailyStats[];
+  /** ST-10: 기간 전체의 게임별 지표 (판 수가 많은 순) */
+  readonly perGame: readonly GameMetrics[];
   /** 응답을 만든 시각 (ISO) */
   readonly generatedAt: string;
 }

@@ -198,6 +198,8 @@ export class BullsRoom extends Room<{ state: BullsState }> {
       this.#playerToClient.get(playerId)?.send(type, payload);
     },
     onAbandoned: () => {
+      // ST-09: 기록 없이 끝난 판은 개수만 남긴다. 저장소가 실패를 삼킨다
+      void runtime.recorder.abandoned(this.roomName, new Date());
       runtime.log('info', 'room abandoned (BE-05)', {
         roomCode: this.#code,
         game: bulls.BULLS_ROOM_TYPE,

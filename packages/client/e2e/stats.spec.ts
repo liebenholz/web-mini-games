@@ -15,6 +15,8 @@ test('ST-01, ST-03: 메인을 열면 방문이 잡히고, /stats에서 그래프
   ).toBeGreaterThanOrEqual(1);
   await expect(page.getByTestId('chart-people').locator('svg')).toBeVisible();
   await expect(page.getByTestId('chart-games').locator('svg')).toBeVisible();
+  // ST-10: 게임별 요약 카드
+  await expect(page.getByTestId('game-metrics')).toContainText('게임별 요약');
   // 기본 30일
   await expect(
     page.getByRole('group', { name: '기간' }).getByRole('button', { name: '30일' }),

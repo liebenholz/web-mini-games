@@ -5,7 +5,9 @@ import {
   GUEST_ID_PATTERN,
   kstDay,
   kstDays,
+  MIN_GAMES_FOR_RATE,
   type DailyStats,
+  type GameMetrics,
   type StatsRange,
   type StatsResponse,
 } from '@wmg/rules';
@@ -33,6 +35,85 @@ export interface StatsStore {
   addClientErrors(rows: readonly ClientErrorRow[]): Promise<void>;
   /** days는 오래된 날부터. 기록이 없는 날은 0으로 채워 같은 길이로 돌려준다 */
   daily(days: readonly string[]): Promise<DailyStats[]>;
+  /** ST-10: fromDay(한국 시간)부터 끝난 판의 게임별 합계 */
+  gameMetrics(fromDay: string): Promise<RawGameMetrics[]>;
+}
+
+/** ST-10: 게임별 합계. 비율과 평균은 finalizeMetrics가 만든다 */
+export interface RawGameMetrics {
+  readonly gameType: string;
+  readonly games: number;
+  readonly minutesSum: number;
+  readonly replacedGames: number;
+  readonly botGames: number;
+  readonly timeouts: number;
+  readonly draws: number;
+  readonly movesSum: number;
+  readonly attemptsSum: number;
+  /** 숫자야구는 한 판에 두 사람의 시도가 있다 */
+  readonly attemptsN: number;
+  readonly turnsSum: number;
+  readonly bankruptGames: number;
+  readonly bids: number;
+  readonly autoBids: number;
+  readonly abandoned: number;
+}
+
+export function emptyRaw(gameType: string): RawGameMetrics {
+  return {
+    gameType,
+    games: 0,
+    minutesSum: 0,
+    replacedGames: 0,
+    botGames: 0,
+    timeouts: 0,
+    draws: 0,
+    movesSum: 0,
+    attemptsSum: 0,
+    attemptsN: 0,
+    turnsSum: 0,
+    bankruptGames: 0,
+    bids: 0,
+    autoBids: 0,
+    abandoned: 0,
+  };
+}
+
+const round = (n: number, digits: number) => Math.round(n * 10 ** digits) / 10 ** digits;
+
+/** ST-10, ST-11: 판이 5판 미만이면 비율은 null. 평균은 판이 하나라도 있으면 보낸다 */
+export function finalizeMetrics(raw: RawGameMetrics): GameMetrics {
+  const n = raw.games;
+  const rate = (k: number) => (n >= MIN_GAMES_FOR_RATE ? round(k / n, 3) : null);
+  const avg = (sum: number, count: number) => (count > 0 ? round(sum / count, 1) : null);
+  const extra: Record<string, number | null> = {};
+  switch (raw.gameType) {
+    case 'gomoku':
+      extra.timeoutRate = rate(raw.timeouts);
+      extra.avgMoves = avg(raw.movesSum, n);
+      break;
+    case 'bulls_and_cows':
+      extra.avgAttempts = avg(raw.attemptsSum, raw.attemptsN);
+      extra.drawRate = rate(raw.draws);
+      break;
+    case 'one_card':
+      extra.bankruptRate = rate(raw.bankruptGames);
+      extra.avgTurns = avg(raw.turnsSum, n);
+      break;
+    case GAME_ID:
+      extra.autoBidRate = n >= MIN_GAMES_FOR_RATE && raw.bids > 0 ? round(raw.autoBids / raw.bids, 3) : null;
+      break;
+  }
+  return {
+    gameType: raw.gameType,
+    games: n,
+    // 짧은 판(숫자야구 몇십 초)도 초로 보일 수 있게 소수 둘째 자리까지
+    avgMinutes: n > 0 ? round(raw.minutesSum / n, 2) : null,
+    replacedRate: rate(raw.replacedGames),
+    abandoned: raw.abandoned,
+    botRate: rate(raw.botGames),
+    extra,
+  };
 }
 
 type Counts = {
@@ -58,6 +139,60 @@ const DAY_KST = `to_char((g.ended_at AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-
 
 export class PgStatsStore implements StatsStore {
   constructor(private readonly pool: pg.Pool) {}
+
+  async gameMetrics(fromDay: string): Promise<RawGameMetrics[]> {
+    const num = (v: unknown) => Number(v ?? 0);
+    const [games, bids, abandoned] = await Promise.all([
+      this.pool.query<Record<string, unknown>>(
+        `SELECT g.game_type AS t,
+                count(*) AS games,
+                coalesce(sum(extract(epoch FROM g.ended_at - g.started_at) / 60), 0) AS minutes,
+                count(*) FILTER (WHERE EXISTS (SELECT 1 FROM game_players gp WHERE gp.game_id = g.id AND gp.replaced)) AS replaced,
+                count(*) FILTER (WHERE EXISTS (SELECT 1 FROM game_players gp WHERE gp.game_id = g.id AND gp.is_bot)) AS bots,
+                count(*) FILTER (WHERE g.end_reason = 'timeout') AS timeouts,
+                count(*) FILTER (WHERE g.end_reason = 'draw') AS draws,
+                coalesce(sum((g.summary->>'moveCount')::numeric), 0) AS moves,
+                coalesce(sum((g.summary->'attempts'->>0)::numeric + (g.summary->'attempts'->>1)::numeric), 0) AS attempts,
+                count(*) FILTER (WHERE g.summary ? 'attempts') * 2 AS attempts_n,
+                coalesce(sum((g.summary->>'turnCount')::numeric), 0) AS turns,
+                count(*) FILTER (WHERE (g.summary->>'bankruptCount')::int > 0) AS bankrupt
+           FROM games g WHERE g.ended_at >= ${FROM_KST} GROUP BY 1`,
+        [fromDay],
+      ),
+      this.pool.query<{ t: string; n: string; auto: string }>(
+        `SELECT g.game_type AS t, count(*) AS n, count(*) FILTER (WHERE b.is_auto) AS auto
+           FROM bids b JOIN games g ON g.id = b.game_id
+          WHERE g.ended_at >= ${FROM_KST} GROUP BY 1`,
+        [fromDay],
+      ),
+      this.pool.query<{ t: string; n: string }>(
+        `SELECT game_type AS t, sum(count) AS n FROM daily_abandoned WHERE day >= $1::date GROUP BY 1`,
+        [fromDay],
+      ),
+    ]);
+    const out = new Map<string, RawGameMetrics>();
+    const get = (t: string) => out.get(t) ?? emptyRaw(t);
+    for (const r of games.rows) {
+      const t = String(r.t);
+      out.set(t, {
+        ...get(t),
+        games: num(r.games),
+        minutesSum: num(r.minutes),
+        replacedGames: num(r.replaced),
+        botGames: num(r.bots),
+        timeouts: num(r.timeouts),
+        draws: num(r.draws),
+        movesSum: num(r.moves),
+        attemptsSum: num(r.attempts),
+        attemptsN: num(r.attempts_n),
+        turnsSum: num(r.turns),
+        bankruptGames: num(r.bankrupt),
+      });
+    }
+    for (const r of bids.rows) out.set(r.t, { ...get(r.t), bids: num(r.n), autoBids: num(r.auto) });
+    for (const r of abandoned.rows) out.set(r.t, { ...get(r.t), abandoned: num(r.n) });
+    return [...out.values()];
+  }
 
   async addVisit(day: string, guestHash: string): Promise<void> {
     await this.pool.query(
@@ -139,6 +274,8 @@ export class MemoryStats implements StatsStore, GameRecorder {
   readonly #visitors = new Map<string, Set<string>>();
   readonly #players = new Map<string, Set<string>>();
   readonly #games = new Map<string, Map<string, number>>();
+  /** ST-10: 날짜 → 게임 → 합계 */
+  readonly #metrics = new Map<string, Map<string, RawGameMetrics>>();
   readonly #clientErrors = new Map<string, Map<string, number>>();
 
   async addClientErrors(rows: readonly ClientErrorRow[]): Promise<void> {
@@ -165,6 +302,59 @@ export class MemoryStats implements StatsStore, GameRecorder {
     });
   }
 
+  #addMetrics(day: string, gameType: string, patch: (m: RawGameMetrics) => RawGameMetrics): void {
+    const byGame = this.#metrics.get(day) ?? new Map<string, RawGameMetrics>();
+    byGame.set(gameType, patch(byGame.get(gameType) ?? emptyRaw(gameType)));
+    this.#metrics.set(day, byGame);
+  }
+
+  #recordMetrics(
+    gameType: string,
+    r: { startedAt: Date; endedAt: Date; endReason: string; players: GameRecord['players'] },
+    summary: Record<string, unknown>,
+    bids: readonly { isAuto: boolean }[],
+  ): void {
+    const num = (v: unknown) => (typeof v === 'number' ? v : 0);
+    const attempts = Array.isArray(summary.attempts) ? summary.attempts.map(num) : [];
+    this.#addMetrics(kstDay(r.endedAt.getTime()), gameType, (m) => ({
+      ...m,
+      games: m.games + 1,
+      minutesSum: m.minutesSum + (r.endedAt.getTime() - r.startedAt.getTime()) / 60_000,
+      replacedGames: m.replacedGames + (r.players.some((p) => p.replaced) ? 1 : 0),
+      botGames: m.botGames + (r.players.some((p) => p.isBot) ? 1 : 0),
+      timeouts: m.timeouts + (r.endReason === 'timeout' ? 1 : 0),
+      draws: m.draws + (r.endReason === 'draw' ? 1 : 0),
+      movesSum: m.movesSum + num(summary.moveCount),
+      attemptsSum: m.attemptsSum + attempts.reduce((a, b) => a + b, 0),
+      attemptsN: m.attemptsN + attempts.length,
+      turnsSum: m.turnsSum + num(summary.turnCount),
+      bankruptGames: m.bankruptGames + (num(summary.bankruptCount) > 0 ? 1 : 0),
+      bids: m.bids + bids.length,
+      autoBids: m.autoBids + bids.filter((b) => b.isAuto).length,
+    }));
+  }
+
+  async gameMetrics(fromDay: string): Promise<RawGameMetrics[]> {
+    const out = new Map<string, RawGameMetrics>();
+    for (const [day, byGame] of this.#metrics) {
+      if (day < fromDay) continue;
+      for (const [t, m] of byGame) {
+        const prev = out.get(t) ?? emptyRaw(t);
+        const sum = { ...prev };
+        for (const k of Object.keys(m) as (keyof RawGameMetrics)[]) {
+          if (k !== 'gameType')
+            (sum as Record<string, number | string>)[k] = (prev[k] as number) + (m[k] as number);
+        }
+        out.set(t, sum);
+      }
+    }
+    return [...out.values()];
+  }
+
+  async abandoned(gameType: string, at: Date): Promise<void> {
+    this.#addMetrics(kstDay(at.getTime()), gameType, (m) => ({ ...m, abandoned: m.abandoned + 1 }));
+  }
+
   #count(gameType: string, endedAt: Date, guestIds: readonly (string | null)[]): void {
     const day = kstDay(endedAt.getTime());
     const games = this.#games.get(day) ?? new Map<string, number>();
@@ -176,6 +366,7 @@ export class MemoryStats implements StatsStore, GameRecorder {
   }
 
   async save(r: GameRecord): Promise<void> {
+    this.#recordMetrics(GAME_ID, r, {}, r.bids);
     this.#count(
       GAME_ID,
       r.endedAt,
@@ -184,6 +375,7 @@ export class MemoryStats implements StatsStore, GameRecorder {
   }
 
   async saveSummary(r: GameSummaryRecord): Promise<void> {
+    this.#recordMetrics(r.gameType, r, r.summary, []);
     this.#count(
       r.gameType,
       r.endedAt,
@@ -265,9 +457,17 @@ export class StatsService {
     const now = this.#now();
     const hit = this.#cache.get(range);
     if (hit && now - hit.at < this.#cacheMs) return hit.value;
-    const value = this.#store.daily(kstDays(range, now)).then((days) => ({
+    const dates = kstDays(range, now);
+    const value = Promise.all([
+      this.#store.daily(dates),
+      this.#store.gameMetrics(dates[0] ?? kstDay(now)),
+    ]).then(([days, raw]) => ({
       range,
       days,
+      // ST-10: 판 수가 많은 순, 같으면 이름순
+      perGame: raw
+        .map(finalizeMetrics)
+        .sort((a, b) => b.games - a.games || a.gameType.localeCompare(b.gameType)),
       generatedAt: new Date(now).toISOString(),
     }));
     // 실패한 응답은 재사용하지 않는다

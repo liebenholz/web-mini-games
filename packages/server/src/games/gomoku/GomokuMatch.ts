@@ -37,6 +37,7 @@ export interface GomokuRecord {
     readonly nickname: string;
     readonly color: Color;
     readonly isBot: boolean;
+    readonly replaced: boolean;
   }[];
   readonly moves: readonly {
     readonly color: Color;
@@ -104,6 +105,8 @@ export class GomokuMatch {
   #moves: { color: Color; x: number; y: number; isBot: boolean }[] = [];
   #gameId = '';
   #startedAt = new Date(0);
+  /** ST-08: 이번 판에서 봇이 자리를 이어받은 사람 (돌아와도 남긴다) */
+  readonly #replacedIds = new Set<string>();
   #turnColor: Color = 'black';
   #turnId = '';
   #cancelTurn: (() => void) | null = null;
@@ -207,6 +210,7 @@ export class GomokuMatch {
       m.view.connected = false;
     } else {
       m.present = false;
+      if (!m.originallyBot) this.#replacedIds.add(m.id);
       m.controller = 'bot';
       m.view.isBot = true;
       m.view.replaced = true;
@@ -344,6 +348,7 @@ export class GomokuMatch {
 
     this.#gameId = this.#rng.id();
     this.#startedAt = new Date(this.#scheduler.now());
+    this.#replacedIds.clear();
     this.#board = gomoku.emptyBoard();
     for (let i = 0; i < gomoku.GOMOKU_CELLS; i += 1) this.state.board[i] = gomoku.EMPTY;
     this.#moves = [];
@@ -477,6 +482,7 @@ export class GomokuMatch {
           nickname: m.nickname,
           color: m.color as Color,
           isBot: m.originallyBot,
+          replaced: this.#replacedIds.has(m.id),
         })),
       moves: [...this.#moves],
       result,

@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { MIGRATIONS } from './migrations.js';
+import { kstDay } from '@wmg/rules';
 import { counters } from '../metrics/metrics.js';
 import type { GamePlayerRecord, GameRecord, GameRecorder, GameSummaryRecord } from './types.js';
 
@@ -58,9 +59,9 @@ export async function writeGame(client: pg.PoolClient, r: GameRecord): Promise<v
     );
     for (const p of r.players) {
       await client.query(
-        `INSERT INTO game_players (game_id, seat, player_id, nickname, is_bot, final_rank)
-         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
-        [r.gameId, p.seat, p.guestId, p.nickname, p.isBot, p.finalRank],
+        `INSERT INTO game_players (game_id, seat, player_id, nickname, is_bot, final_rank, replaced)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`,
+        [r.gameId, p.seat, p.guestId, p.nickname, p.isBot, p.finalRank, p.replaced],
       );
     }
     for (const round of r.rounds) {
@@ -133,9 +134,9 @@ export async function writeSummary(client: pg.PoolClient, r: GameSummaryRecord):
     );
     for (const p of r.players) {
       await client.query(
-        `INSERT INTO game_players (game_id, seat, player_id, nickname, is_bot, final_rank)
-         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
-        [r.gameId, p.seat, p.guestId, p.nickname, p.isBot, p.finalRank],
+        `INSERT INTO game_players (game_id, seat, player_id, nickname, is_bot, final_rank, replaced)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`,
+        [r.gameId, p.seat, p.guestId, p.nickname, p.isBot, p.finalRank, p.replaced],
       );
     }
     await client.query('COMMIT');
@@ -173,6 +174,20 @@ export class PgRecorder implements GameRecorder {
 
   async saveSummary(record: GameSummaryRecord): Promise<void> {
     await this.#attempt(record, (client) => writeSummary(client, record), 0);
+  }
+
+  /** ST-09: 방이 끝날 때 한 번. 실패해도 게임에는 영향이 없으니 로그만 남긴다 */
+  async abandoned(gameType: string, at: Date): Promise<void> {
+    if (this.#closed) return;
+    try {
+      await this.pool.query(
+        `INSERT INTO daily_abandoned (day, game_type, count) VALUES ($1, $2, 1)
+         ON CONFLICT (day, game_type) DO UPDATE SET count = daily_abandoned.count + 1`,
+        [kstDay(at.getTime()), gameType],
+      );
+    } catch (error) {
+      this.#log('warn', 'abandoned game not counted', { gameType, error: String(error) });
+    }
   }
 
   async #attempt(

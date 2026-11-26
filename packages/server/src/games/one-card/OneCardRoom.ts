@@ -199,6 +199,8 @@ export class OneCardRoom extends Room<{ state: OneCardState }> {
       this.#playerToClient.get(playerId)?.send(type, payload);
     },
     onAbandoned: () => {
+      // ST-09: 기록 없이 끝난 판은 개수만 남긴다. 저장소가 실패를 삼킨다
+      void runtime.recorder.abandoned(this.roomName, new Date());
       runtime.log('info', 'room abandoned (CE-08)', {
         roomCode: this.#code,
         game: oneCard.ONE_CARD_ROOM_TYPE,

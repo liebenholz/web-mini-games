@@ -19,6 +19,8 @@ export interface GamePlayerRecord {
   readonly nickname: string;
   readonly seat: number;
   readonly isBot: boolean;
+  /** ST-08: 게임 중 나가 봇이 자리를 이어받았다 (docs/specs/stats.md) */
+  readonly replaced: boolean;
   readonly finalRank: number;
 }
 
@@ -72,12 +74,15 @@ export interface GameSummaryRecord {
 export interface GameRecorder {
   save(record: GameRecord): Promise<void>;
   saveSummary(record: GameSummaryRecord): Promise<void>;
+  /** ST-09: 사람이 모두 나가 기록 없이 끝난 판(E-10). 날짜·게임별 개수만 남긴다 */
+  abandoned(gameType: string, at: Date): Promise<void>;
   close(): Promise<void>;
 }
 
 export const noopRecorder: GameRecorder = {
   save: async () => {},
   saveSummary: async () => {},
+  abandoned: async () => {},
   close: async () => {},
 };
 
@@ -85,6 +90,10 @@ export const noopRecorder: GameRecorder = {
 export class MemoryRecorder implements GameRecorder {
   readonly records: GameRecord[] = [];
   readonly summaries: GameSummaryRecord[] = [];
+  readonly abandonedGames: { gameType: string; at: Date }[] = [];
+  async abandoned(gameType: string, at: Date): Promise<void> {
+    this.abandonedGames.push({ gameType, at });
+  }
   async save(record: GameRecord): Promise<void> {
     this.records.push(record);
   }

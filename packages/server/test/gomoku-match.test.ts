@@ -209,6 +209,19 @@ describe('오목 방: 퇴장과 연결 끊김 (G-22, G-23)', () => {
     expect(g.match.state.winnerId).toBe(g.white);
   });
 
+  it('ST-08: 게임 중 나가 봇이 이어받은 자리는 판 기록에 replaced로 남는다', () => {
+    const g = started({ blackPolicy: 'host', turnSeconds: 15 });
+    place(g.match, g.black, 'H8');
+    g.match.leave(g.white);
+    g.scheduler.advance(FAST_TIMING.botDelayMaxMs);
+    g.match.disconnect(g.black);
+    g.scheduler.advance(15_000 + 1);
+    expect(g.match.state.result).toBe('timeout');
+    const players = g.io.records[0]?.players ?? [];
+    expect(players.find((p) => p.color === 'white')).toMatchObject({ isBot: false, replaced: true });
+    expect(players.find((p) => p.color === 'black')).toMatchObject({ replaced: false });
+  });
+
   it('사람이 모두 나가면 방을 닫는다 (GE-06)', () => {
     const g = started();
     g.match.leave(g.host);

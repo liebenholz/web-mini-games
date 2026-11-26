@@ -35,6 +35,7 @@ export interface BullsRecord {
     readonly seat: Seat;
     readonly attempts: number;
     readonly isBot: boolean;
+    readonly replaced: boolean;
   }[];
   readonly result: bulls.BullsEndResult;
   readonly winnerSeat: Seat | null;
@@ -104,6 +105,8 @@ export class BullsMatch {
   #game: bulls.BullsState | null = null;
   #gameId = '';
   #startedAt = new Date(0);
+  /** ST-08: 이번 판에서 봇이 자리를 이어받은 사람 (돌아와도 남긴다) */
+  readonly #replacedIds = new Set<string>();
   #skipped = 0;
   #hadLastChance = false;
   #turnId = '';
@@ -211,6 +214,7 @@ export class BullsMatch {
       m.view.connected = false;
     } else {
       m.present = false;
+      if (!m.originallyBot) this.#replacedIds.add(m.id);
       m.controller = 'bot';
       m.view.isBot = true;
       m.view.replaced = true;
@@ -350,6 +354,7 @@ export class BullsMatch {
     });
     this.#gameId = this.#rng.id();
     this.#startedAt = new Date(this.#scheduler.now());
+    this.#replacedIds.clear();
     this.#skipped = 0;
     this.#hadLastChance = false;
     this.state.history.clear();
@@ -559,6 +564,7 @@ export class BullsMatch {
         seat: p.seat ?? 0,
         attempts: g.attempts[p.seat ?? 0],
         isBot: p.originallyBot,
+        replaced: this.#replacedIds.has(p.id),
       })),
       result: g.result,
       winnerSeat: g.winner,
