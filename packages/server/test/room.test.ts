@@ -440,7 +440,9 @@ describe('BullsRoom 통합 (Phase 2 M4)', () => {
     expect(secretOf(host)).toEqual(['102']);
     expect(secretOf(guest)).toEqual(['345']);
     const json = JSON.stringify((host.room.state as { toJSON(): unknown }).toJSON());
-    expect(json).not.toContain('345');
+    // 비밀 숫자는 문자열 값 하나로 새어 나간다. 따옴표째 찾는다 (id·마감 시각에 우연히 345가 들어갈 수 있다)
+    expect(json).not.toContain('"345"');
+    expect(json).not.toContain('"102"');
     expect(has(host, 'turn_start')).toBe(true);
   });
 });
