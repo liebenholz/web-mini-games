@@ -131,7 +131,7 @@ export abstract class GameRoom<M extends MatchLike, O> extends Room<{ state: M['
 
     this.#sessionToPlayer.set(client.sessionId, result.playerId);
     this.#playerToClient.set(result.playerId, client);
-    client.send('welcome', { playerId: result.playerId, role: result.role });
+    client.send('welcome', this.welcomePayload(result.playerId, result.role));
     if (result.reclaimed) this.match.reconnect(result.playerId);
   }
 
@@ -204,6 +204,11 @@ export abstract class GameRoom<M extends MatchLike, O> extends Room<{ state: M['
       );
     }
     return false;
+  }
+
+  /** welcome 메시지 본문. 게임이 순서 정보 등을 더할 수 있다 */
+  protected welcomePayload(playerId: string, role: 'player' | 'spectator'): Record<string, unknown> {
+    return { playerId, role };
   }
 
   protected errorPayload(code: ErrorCode, message: string): Record<string, unknown> {
