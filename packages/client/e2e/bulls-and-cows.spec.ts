@@ -58,7 +58,8 @@ test('M4: 사람 1명 + 봇으로 한 판을 끝까지 하고, 끝나면 두 비
     const go = page.getByTestId('guess');
     if (await go.isVisible().catch(() => false)) {
       const enabledKey = page.locator('.bc-keys.six [data-key="0"]');
-      if (await enabledKey.isEnabled().catch(() => false)) {
+      // isEnabled는 요소가 생길 때까지 기다린다. 판이 끝나 키패드가 사라지면 테스트 끝까지 멈추므로 짧게 끊는다
+      if (await enabledKey.isEnabled({ timeout: 500 }).catch(() => false)) {
         await page.keyboard.type(candidates[i % candidates.length] as string);
         await page.keyboard.press('Enter');
       }
