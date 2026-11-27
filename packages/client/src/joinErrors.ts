@@ -30,6 +30,7 @@ export function describeError(code: string): string {
     INVALID_SUIT: '모양을 다시 골라 주세요.',
     INVALID_GUESS: '0~9 숫자를 겹치지 않게 자릿수만큼 넣어 주세요.',
     RATE_LIMITED: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+    OUT_OF_RANGE: '지금 범위 안의 숫자만 말할 수 있어요.',
     NETWORK: '서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.',
   };
   return map[code] ?? '요청을 처리하지 못했습니다.';

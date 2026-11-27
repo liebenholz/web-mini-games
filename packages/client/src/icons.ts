@@ -26,6 +26,13 @@ export const icons = {
     '<rect x="3" y="6" width="11" height="15" rx="2"/><path d="M8 3.5l1-.5 11 3.6a1.5 1.5 0 0 1 1 1.9L18 18"/>',
   ),
   board: wrap('<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>'),
+  /** 파티 게임 (업다운 숫자폭탄 등) */
+  bomb: wrap(
+    '<circle cx="10" cy="14" r="7"/><path d="M14.6 9.4l1.9-1.9 1.6 1.6-1.9 1.9"/><path d="M18 7l1.2-1.2M20.3 8.6l1.4.2M18.6 4.4l.2-1.4"/>',
+  ),
+  check: wrap('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 10"/>'),
+  arrowUp: wrap('<path d="M12 19V5M6 11l6-6 6 6"/>'),
+  arrowDown: wrap('<path d="M12 5v14M6 13l6 6 6-6"/>'),
   eye: wrap('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
   eyeOff: wrap(
     '<path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
@@ -110,4 +117,9 @@ export function cardTileSvg(symbol: string): string {
 /** 글자 하나를 넣은 둥근 사각형 (숫자야구 로비 장식: 1 2 3 S B) */
 export function textTileSvg(text: string): string {
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" fill="currentColor">${text}</text></svg>`;
+}
+
+/** 업다운 당첨 화면의 큰 폭탄 (채운 그림, 64 단위) */
+export function bombSvg(): string {
+  return '<svg class="ud-bomb" viewBox="0 0 64 64" aria-hidden="true"><circle cx="28" cy="38" r="20" fill="currentColor"/><rect x="34" y="14" width="10" height="9" rx="2" transform="rotate(35 39 18)" fill="currentColor"/><path d="M44 12c3-5 8-5 10-2" fill="none" stroke="#f5a524" stroke-width="3" stroke-linecap="round"/><circle cx="56" cy="8" r="3.5" fill="#f5a524"/><circle cx="21" cy="31" r="5" fill="#fff" opacity=".35"/></svg>';
 }

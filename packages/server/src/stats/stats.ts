@@ -58,6 +58,8 @@ export interface RawGameMetrics {
   readonly passGames: number;
   /** 리버시: 시간 초과로 서버가 대신 둔 수 (RV-12) */
   readonly autoMoves: number;
+  /** 업다운: 남은 숫자가 폭탄뿐이라 끝난 판 (UD-07) */
+  readonly forcedGames: number;
   readonly bids: number;
   readonly autoBids: number;
   readonly abandoned: number;
@@ -79,6 +81,7 @@ export function emptyRaw(gameType: string): RawGameMetrics {
     bankruptGames: 0,
     passGames: 0,
     autoMoves: 0,
+    forcedGames: 0,
     bids: 0,
     autoBids: 0,
     abandoned: 0,
@@ -111,6 +114,12 @@ export function finalizeMetrics(raw: RawGameMetrics): GameMetrics {
       extra.passRate = rate(raw.passGames);
       extra.autoMoveRate =
         n >= MIN_GAMES_FOR_RATE && raw.movesSum > 0 ? round(raw.autoMoves / raw.movesSum, 3) : null;
+      break;
+    case 'updown_bomb':
+      extra.avgMoves = avg(raw.movesSum, n);
+      extra.autoMoveRate =
+        n >= MIN_GAMES_FOR_RATE && raw.movesSum > 0 ? round(raw.autoMoves / raw.movesSum, 3) : null;
+      extra.forcedRate = rate(raw.forcedGames);
       break;
     case GAME_ID:
       extra.autoBidRate = n >= MIN_GAMES_FOR_RATE && raw.bids > 0 ? round(raw.autoBids / raw.bids, 3) : null;
@@ -169,7 +178,8 @@ export class PgStatsStore implements StatsStore {
                 coalesce(sum((g.summary->>'turnCount')::numeric), 0) AS turns,
                 count(*) FILTER (WHERE (g.summary->>'bankruptCount')::int > 0) AS bankrupt,
                 count(*) FILTER (WHERE (g.summary->>'passCount')::int > 0) AS passes,
-                coalesce(sum((g.summary->>'autoMoveCount')::numeric), 0) AS auto_moves
+                coalesce(sum((g.summary->>'autoMoveCount')::numeric), 0) AS auto_moves,
+                count(*) FILTER (WHERE (g.summary->>'forced')::boolean) AS forced
            FROM games g WHERE g.ended_at >= ${FROM_KST} GROUP BY 1`,
         [fromDay],
       ),
@@ -203,6 +213,7 @@ export class PgStatsStore implements StatsStore {
         bankruptGames: num(r.bankrupt),
         passGames: num(r.passes),
         autoMoves: num(r.auto_moves),
+        forcedGames: num(r.forced),
       });
     }
     for (const r of bids.rows) out.set(r.t, { ...get(r.t), bids: num(r.n), autoBids: num(r.auto) });
@@ -347,6 +358,7 @@ export class MemoryStats implements StatsStore, GameRecorder {
       bankruptGames: m.bankruptGames + (num(summary.bankruptCount) > 0 ? 1 : 0),
       passGames: m.passGames + (num(summary.passCount) > 0 ? 1 : 0),
       autoMoves: m.autoMoves + num(summary.autoMoveCount),
+      forcedGames: m.forcedGames + (summary.forced === true ? 1 : 0),
       bids: m.bids + bids.length,
       autoBids: m.autoBids + bids.filter((b) => b.isAuto).length,
     }));

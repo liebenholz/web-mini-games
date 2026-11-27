@@ -16,5 +16,8 @@ export * as bulls from './games/bulls-and-cows/index.js';
 
 /** 리버시 룰 엔진 (docs/specs/reversi.md): reversi.placeStone(...) */
 export * as reversi from './games/reversi/index.js';
+
+/** 업다운 숫자폭탄 룰 엔진 (docs/specs/updown-bomb.md): updown.callNumber(...) */
+export * as updown from './games/updown-bomb/index.js';
 export * from './stats.js';
 export * from './clientErrors.js';

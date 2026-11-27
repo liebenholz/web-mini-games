@@ -4,14 +4,16 @@ import { CATALOG } from '../src/games/catalog.js';
 import { findGame, GAMES, gameByRoomType } from '../src/games/registry.js';
 
 describe('게임 목록', () => {
-  it('거짓말쟁이 주사위, 오목, 원카드, 숫자야구, 리버시 모두 플레이할 수 있다', () => {
+  it('구현된 게임은 모두 플레이할 수 있다', () => {
     expect(GAMES.filter((g) => g.status === 'available').map((g) => g.id)).toEqual([
       'liars-dice',
       'gomoku',
       'one-card',
       'bulls-and-cows',
       'reversi',
+      'updown-bomb',
     ]);
+    expect(findGame('updown-bomb')).toMatchObject({ roomType: 'updown_bomb', category: 'party' });
     expect(findGame('bulls-and-cows')?.roomType).toBe('bulls_and_cows');
     expect(findGame('reversi')?.roomType).toBe('reversi');
     expect(findGame('gomoku')?.roomType).toBe('gomoku');

@@ -438,6 +438,49 @@ describe('ReversiRoom 통합 (reversi.md, ADR 0003 P5)', () => {
   });
 });
 
+describe('UpdownRoom 통합 (updown-bomb.md)', () => {
+  it('두 사람이 들어와 시작하고, 말하면 범위가 좁혀지며, 끝나기 전엔 폭탄 숫자가 오가지 않는다', async () => {
+    const room = await colyseus.sdk.create('updown_bomb', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { fillWithBots: false, turnSeconds: 15, rangeMax: 200 },
+    });
+    const host = spy(room);
+    await waitFor(() => host.playerId !== '');
+    const guestSpy = await joinRoom(host.room.roomId, newGuest(), '손님');
+    guestSpy.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as {
+      phase: string;
+      turnId: string;
+      currentTurn: string;
+      low: number;
+      high: number;
+      bomb: number;
+    };
+    await waitFor(() => state.phase === 'PLAYING');
+    expect([state.low, state.high, state.bomb]).toEqual([1, 200, 0]);
+    const mover = state.currentTurn === host.playerId ? host : guestSpy;
+    const turnId = state.turnId;
+    mover.room.send('call_number', { value: 0, turnId });
+    await waitFor(() => mover.messages.some((m) => m.type === 'error' && m.payload.code === 'OUT_OF_RANGE'));
+    mover.room.send('call_number', { value: 1, turnId });
+    await waitFor(() => state.turnId !== turnId || state.phase === 'GAME_OVER');
+    await waitFor(() => has(host, 'number_called') && has(guestSpy, 'number_called'));
+    const called = guestSpy.messages.find((m) => m.type === 'number_called')?.payload;
+    expect(called).toMatchObject({ playerId: mover.playerId, value: 1 });
+    if (state.phase === 'PLAYING') {
+      expect(called).toMatchObject({ result: 'up', low: 2, high: 200 });
+      expect(state.low).toBe(2);
+      // UD-20: 끝나기 전에는 어떤 메시지에도 bomb이 없다
+      for (const spyOf of [host, guestSpy])
+        for (const m of spyOf.messages) expect(Object.keys(m.payload ?? {})).not.toContain('bomb');
+      expect(state.bomb).toBe(0);
+    }
+  });
+});
+
 describe('OneCardRoom 통합 (Phase 2 M3)', () => {
   it('두 사람 + 봇 2명으로 시작하면 각자 자기 패 7장만 받고, 공유 상태에는 패가 없다 (C-40)', async () => {
     const room = await colyseus.sdk.create('one_card', {

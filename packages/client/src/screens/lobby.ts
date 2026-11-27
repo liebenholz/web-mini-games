@@ -155,5 +155,7 @@ export function heroIcons(game: Pick<GameInfo, 'category'>): string[] {
   if (game.category === 'board') return [1, 2, 3, 4, 5].map(boardStonesSvg);
   if (game.category === 'card') return ['♠', '♥', '◆', '♣', '★'].map(cardTileSvg);
   if (game.category === 'number') return ['1', '2', '3', 'S', 'B'].map(textTileSvg);
+  if (game.category === 'party')
+    return [icons.bomb, textTileSvg('↑'), textTileSvg('?'), textTileSvg('↓'), icons.bomb];
   return [1, 3, 3, 5, 6].map((f) => dieSvg(f));
 }
