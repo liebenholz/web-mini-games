@@ -48,6 +48,8 @@ export const ERROR_CODES = [
   'INVALID_SUIT',
   // 숫자야구 비밀 숫자·추측 형식 (bulls-and-cows.md BE-02)
   'INVALID_GUESS',
+  // 업다운 숫자폭탄: 지금 범위 밖이거나 정수가 아님 (updown-bomb.md 10장)
+  'OUT_OF_RANGE',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

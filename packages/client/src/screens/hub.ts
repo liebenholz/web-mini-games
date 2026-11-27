@@ -9,10 +9,11 @@ const CATEGORY_ICON: Record<GameCategory, string> = {
   card: icons.cards,
   board: icons.board,
   number: textTileSvg('#'),
+  party: icons.bomb,
 };
 
 /** 카테고리마다 파스텔 톤 하나 (Phase 3 카테고리 화면에서도 같은 색을 쓴다) */
-const CATEGORY_TONE: Record<GameCategory, number> = { dice: 1, board: 2, card: 3, number: 4 };
+const CATEGORY_TONE: Record<GameCategory, number> = { dice: 1, board: 2, card: 3, number: 4, party: 6 };
 
 function gameCard(game: GameInfo, onOpen: (game: GameInfo) => void): HTMLElement {
   const available = game.status === 'available';

@@ -2,7 +2,7 @@
  * 게임 목록의 순수 데이터. 화면(registry.ts)과 빌드(vite.config.ts의 링크 미리보기)가 같이 읽는다.
  * DOM이나 다른 모듈을 import하지 않는다 (빌드 설정에서도 불러오기 때문)
  */
-export type GameCategory = 'dice' | 'card' | 'board' | 'number';
+export type GameCategory = 'dice' | 'card' | 'board' | 'number' | 'party';
 
 export interface GameCatalogEntry {
   /** 주소에 쓰는 이름: /<id>, /<id>/r/<코드> */
@@ -74,6 +74,16 @@ export const CATALOG: readonly GameCatalogEntry[] = [
     players: '2명',
     minutes: '10분',
     category: 'board',
+    status: 'available',
+  },
+  {
+    id: 'updown-bomb',
+    name: '업다운 숫자폭탄',
+    tagline: '범위를 좁히다 폭탄 숫자를 말하면 당첨',
+    lead: '숨은 폭탄 숫자를 피해 차례대로 숫자를 말해요. 폭탄을 말한 사람이 당첨!',
+    players: '2~6명',
+    minutes: '1~3분',
+    category: 'party',
     status: 'available',
   },
 ];

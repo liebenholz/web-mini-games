@@ -2326,6 +2326,568 @@ button.game-main:focus-visible,
   }
 }
 
+/* ───── 업다운 숫자폭탄 (updown-bomb.md 8장, 시안 2026-11-27). 파티 게임 공통 결과 화면(9장)도 여기 ───── */
+.ud {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+
+.ud-bar {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  background: var(--bg);
+}
+
+.ud-count {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+/* 폰: 참가자 → 알림 → 범위 → 입력 → 기록 한 줄로. PC(860px~): 왼쪽 범위·입력, 오른쪽 참가자·기록 */
+.ud-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.ud-col {
+  display: contents;
+}
+
+.ud-players {
+  order: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ud-flash-slot {
+  order: 1;
+  min-height: 38px;
+}
+
+.ud-range {
+  order: 2;
+}
+
+.ud-input,
+.ud-wait {
+  order: 3;
+}
+
+.ud-log {
+  order: 4;
+}
+
+.ud-p {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  min-width: 0;
+}
+
+.ud-p .avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
+}
+
+.ud-p .nm {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ud-p.active {
+  border: 2px solid var(--accent);
+  padding: 5px 7px;
+}
+
+.ud-t {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 3px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+
+.ud-t i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.ud-t.urgent i {
+  background: var(--danger);
+}
+
+.ud-tag {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--p5-bg);
+  color: var(--p5-fg);
+  white-space: nowrap;
+}
+
+.ud-tag.off {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.ud-flash {
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ud-flash .icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.ud-flash.up {
+  background: var(--p4-bg);
+  color: var(--p4-fg);
+}
+
+.ud-flash.down {
+  background: var(--p3-bg);
+  color: var(--p3-fg);
+}
+
+.ud-flash.bot {
+  background: var(--p5-bg);
+  color: var(--p5-fg);
+}
+
+.ud-flash.off {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.ud-range {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  text-align: center;
+}
+
+.ud-range .lab {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ud-range .nums {
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 4px 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ud-range .tilde {
+  color: var(--ink-3);
+  font-weight: 600;
+  margin: 0 0.2em;
+}
+
+.ud-track {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+
+.ud-track .live {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 6px;
+  background: var(--accent);
+}
+
+.ud-track .mk {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 20px;
+  border-radius: 1px;
+}
+
+.ud-track .mk.up {
+  background: var(--p4-fg);
+}
+
+.ud-track .mk.down {
+  background: var(--p3-fg);
+}
+
+.ud-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+
+.ud-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ud-val {
+  height: 52px;
+  border-radius: var(--radius);
+  border: 2px solid var(--accent);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ud-val.bad {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.ud-val.empty {
+  color: var(--ink-3);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ud-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.ud-hint.bad {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.ud-keys {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.ud-key {
+  min-height: 46px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ud-key:active {
+  background: var(--surface-2);
+}
+
+.ud-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 6px;
+}
+
+.ud-actions .btn {
+  min-height: 48px;
+}
+
+/* 키패드와 같은 높이로 자리를 지켜 차례가 바뀌어도 화면이 출렁이지 않게 */
+.ud-wait {
+  min-height: 244px;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--ink-2);
+}
+
+.ud-wait b {
+  color: var(--ink);
+}
+
+.ud-log h3 {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  margin: 0 0 6px;
+}
+
+.ud-log ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ud-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.ud-row.fresh {
+  border-color: var(--accent);
+}
+
+.ud-row .who {
+  font-weight: 700;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ud-row .n {
+  font-weight: 800;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.ud-row .res {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  min-width: 56px;
+  text-align: center;
+}
+
+.ud-row .res.up {
+  background: var(--p4-bg);
+  color: var(--p4-fg);
+}
+
+.ud-row .res.down {
+  background: var(--p3-bg);
+  color: var(--p3-fg);
+}
+
+.ud-row .res.bomb {
+  background: var(--danger);
+  color: #fff;
+}
+
+.ud-auto {
+  font-size: 0.6875rem;
+  color: var(--p5-fg);
+  background: var(--p5-bg);
+  border-radius: var(--radius-pill);
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+/* 파티 게임 공통 결과: 당첨(빨강) / 통과(초록) */
+.ud-body.over {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.ud-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ud-hit {
+  background: var(--bg);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.ud-hit.pass {
+  border-color: var(--success);
+}
+
+.ud-hit .title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 6px 0 0;
+}
+
+.ud-hit .sub {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  margin: 4px 0 0;
+}
+
+.ud-hit .avatar {
+  width: 48px;
+  height: 48px;
+  margin: 8px auto 0;
+  font-size: 1.125rem;
+}
+
+.ud-hit .bombtext,
+.ud-bombnum {
+  color: var(--danger);
+}
+
+.ud-bomb-wrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 4px;
+  color: var(--danger);
+  animation: ud-shake 0.6s var(--ease-out) both;
+}
+
+.ud-bomb-wrap svg {
+  width: 100%;
+  height: 100%;
+}
+
+.ud-bombnum {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  animation: ud-pop 0.3s 0.5s var(--ease-out) both;
+}
+
+.ud-pass-ic {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  color: var(--success);
+}
+
+.ud-pass-ic .icon {
+  width: 100%;
+  height: 100%;
+}
+
+.ud-sum {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+@keyframes ud-shake {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-12deg);
+  }
+  40% {
+    transform: rotate(10deg);
+  }
+  60% {
+    transform: rotate(-6deg);
+  }
+  80% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes ud-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ud-bomb-wrap,
+  .ud-bombnum {
+    animation: none;
+  }
+}
+
+@media (min-width: 860px) {
+  .ud-body:not(.over) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    align-items: start;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    max-width: 1040px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .ud-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .ud-players {
+    grid-template-columns: 1fr;
+  }
+  .ud-range .nums {
+    font-size: 3.5rem;
+  }
+  .ud-input {
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+
 /* ───── 원카드 (one-card.md 11장, 시안) ───── */
 .fixed-rules {
   display: flex;

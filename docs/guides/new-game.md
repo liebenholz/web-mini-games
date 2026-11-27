@@ -114,6 +114,8 @@
 - `test/registry.test.ts`의 "플레이할 수 있는 게임" 목록에 id를 더한다
 - 게임 색은 `styles/tokens.css`에만 토큰으로 넣고(예: `--rv-board`), 화면 CSS는 `styles/app.css`에 게임 이름 머리말을 단 구역으로 넣는다
 - 메인 카드 아이콘은 카테고리로 정해진다. 같은 카테고리면 아이콘이 같다
+- **새 카테고리를 만들면** (예: 업다운의 `party`) 네 곳을 같이 고친다: `games/catalog.ts`의 `GameCategory`, `screens/hub.ts`의 `CATEGORY_ICON`·`CATEGORY_TONE`, `screens/lobby.ts`의 `heroIcons`. 아이콘은 `icons.ts`에 선 아이콘으로 그린다
+- 새 에러 코드는 `rules/src/protocol.ts`의 목록과 `client/src/joinErrors.ts`의 `describeError` 문구를 같이 넣는다
 - `/stats` 화면은 게임 목록에서 이름을 읽으므로 따로 할 일이 없다
 
 테스트:
