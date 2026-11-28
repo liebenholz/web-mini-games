@@ -14,6 +14,7 @@ describe('게임 목록', () => {
       'updown-bomb',
       'balloon',
       'treasure',
+      'yacht',
     ]);
     expect(findGame('treasure')).toMatchObject({ roomType: 'treasure', category: 'party' });
     expect(findGame('balloon')).toMatchObject({ roomType: 'balloon', category: 'party' });

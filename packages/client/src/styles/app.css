@@ -4758,3 +4758,421 @@ button.game-main:focus-visible,
     padding-left: calc(9rem + var(--space-2));
   }
 }
+
+/* ───── 요트 주사위 (yacht.md 8장, 시안 2026-11-28). 틀은 업다운(ud-*)을 같이 쓴다 ───── */
+.yt-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 14px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.yt-players {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.yt-players.n2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.yt-p {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  min-width: 0;
+}
+
+.yt-p .avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
+  flex: none;
+}
+
+.yt-p .nm {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.yt-p .tot {
+  margin-left: auto;
+  font-weight: 800;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.yt-p.active {
+  border: 2px solid var(--accent);
+  padding: 5px 7px;
+}
+
+.yt-p .t {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 3px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+
+.yt-p .t i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+}
+
+.yt-p .t.urgent i {
+  background: var(--danger);
+}
+
+.yt-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--p4-bg);
+  color: var(--p4-fg);
+}
+
+.yt-note svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.yt-tray {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 12px 10px 10px;
+}
+
+.yt-dice {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.yt-die {
+  position: relative;
+  aspect-ratio: 1;
+  border: 2px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  min-width: 0;
+}
+
+.yt-die svg {
+  width: 70%;
+}
+
+.yt-die.blank {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.yt-die.held {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.yt-die:disabled {
+  cursor: default;
+}
+
+.yt-die .hold {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  font-size: 0.625rem;
+  font-weight: 800;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
+.yt-die.rolling {
+  animation: yt-shake 0.42s ease-out;
+}
+
+@keyframes yt-shake {
+  0% {
+    transform: rotate(-14deg) translateY(-6px);
+  }
+  35% {
+    transform: rotate(10deg) translateY(2px);
+  }
+  70% {
+    transform: rotate(-4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yt-die.rolling {
+    animation: none;
+  }
+}
+
+.yt-roll {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.yt-roll .btn {
+  flex: 1;
+  min-height: 52px;
+  font-weight: 800;
+  font-size: 1.0625rem;
+}
+
+.yt-roll .pips {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.yt-roll .pips i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+}
+
+.yt-roll .pips i.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.yt-sheet {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 4px 6px 6px;
+}
+
+.yt-sheet table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.yt-sheet th,
+.yt-sheet td {
+  padding: 0;
+  height: 32px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.yt-sheet th.lab {
+  text-align: left;
+  width: 34%;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  padding-left: 4px;
+  white-space: nowrap;
+}
+
+.yt-sheet thead th {
+  height: 30px;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yt-sheet thead th.me {
+  color: var(--accent);
+}
+
+.yt-sheet td.me {
+  background: color-mix(in oklab, var(--accent-soft) 55%, transparent);
+}
+
+.yt-sheet tr.sum th,
+.yt-sheet tr.sum td {
+  font-weight: 800;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.yt-sheet tr.total th,
+.yt-sheet tr.total td {
+  font-weight: 800;
+  font-size: 0.9375rem;
+  border-bottom: 0;
+}
+
+.yt-sheet td button {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.yt-sheet td button.zero {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.yt-sheet td button.sel {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+}
+
+.yt-sheet td.bonus {
+  color: var(--success);
+  font-weight: 800;
+}
+
+.yt-confirm {
+  width: 100%;
+  min-height: 52px;
+  font-weight: 800;
+  font-size: 1.0625rem;
+}
+
+.yt-dock {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -12px -14px;
+  padding: 10px 12px 12px;
+  background: linear-gradient(to top, var(--surface) 78%, transparent);
+}
+
+.yt-wait {
+  background: var(--bg);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  text-align: center;
+  color: var(--ink-2);
+  margin-top: 10px;
+}
+
+.yt-hit {
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  text-align: center;
+}
+
+.yt-hit .t {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 2px 0 0;
+}
+
+.yt-hit .s {
+  color: var(--ink-2);
+  margin: 4px 0 0;
+  font-size: 0.9375rem;
+}
+
+.yt-rank {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 4px 10px;
+}
+
+.yt-rank .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9375rem;
+}
+
+.yt-rank .row:last-child {
+  border-bottom: 0;
+}
+
+.yt-rank .row .no {
+  width: 22px;
+  font-weight: 800;
+  color: var(--ink-3);
+}
+
+.yt-rank .row.first .no {
+  color: var(--accent);
+}
+
+.yt-rank .row .nm {
+  flex: 1;
+  font-weight: 700;
+}
+
+.yt-rank .row .pt {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.yt-rank .tag {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.yt-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 560px) {
+  .yt-players.n3,
+  .yt-players.n4 {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}

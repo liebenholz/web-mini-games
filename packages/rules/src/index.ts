@@ -25,5 +25,8 @@ export * as balloon from './games/balloon/index.js';
 
 /** 보물 찾기 룰 엔진 (docs/specs/treasure.md): treasure.resolveRound(...) */
 export * as treasure from './games/treasure/index.js';
+
+/** 요트 주사위 룰 엔진 (docs/specs/yacht.md): yacht.scoreCategory(...) */
+export * as yacht from './games/yacht/index.js';
 export * from './stats.js';
 export * from './clientErrors.js';

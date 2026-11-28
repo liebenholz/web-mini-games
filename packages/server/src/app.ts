@@ -11,6 +11,7 @@ import {
   balloon,
   bulls,
   treasure,
+  yacht,
   GAME_ID,
   gomoku,
   oneCard,
@@ -25,6 +26,7 @@ import { ReversiRoom } from './games/reversi/ReversiRoom.js';
 import { UpdownRoom } from './games/updown-bomb/UpdownRoom.js';
 import { BalloonRoom } from './games/balloon/BalloonRoom.js';
 import { TreasureRoom } from './games/treasure/TreasureRoom.js';
+import { YachtRoom } from './games/yacht/YachtRoom.js';
 import { BullsRoom } from './games/bulls-and-cows/BullsRoom.js';
 import { OneCardRoom } from './games/one-card/OneCardRoom.js';
 import { activeRooms, runtime } from './games/liars-dice/runtime.js';
@@ -123,6 +125,7 @@ export function createGameServer({
       [updown.UPDOWN_ROOM_TYPE]: defineRoom(UpdownRoom),
       [balloon.BALLOON_ROOM_TYPE]: defineRoom(BalloonRoom),
       [treasure.TREASURE_ROOM_TYPE]: defineRoom(TreasureRoom),
+      [yacht.YACHT_ROOM_TYPE]: defineRoom(YachtRoom),
       [oneCard.ONE_CARD_ROOM_TYPE]: defineRoom(OneCardRoom),
       [bulls.BULLS_ROOM_TYPE]: defineRoom(BullsRoom),
     },
