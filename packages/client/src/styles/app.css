@@ -1448,6 +1448,169 @@ body.sheet-open {
   letter-spacing: 0.08em;
 }
 
+/* 메인 화면 검색·필터 (시안 2026-11-28) */
+.hub-find {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--bg);
+  padding: 8px 0 6px;
+  margin-top: -8px;
+}
+
+.hub [hidden] {
+  display: none !important;
+}
+
+.find-box {
+  position: relative;
+}
+
+.find-box input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0 44px 0 42px;
+  font-size: 1rem;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.find-box input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.find-box input:focus {
+  outline: 3px solid color-mix(in oklab, var(--focus) 55%, transparent);
+  outline-offset: 1px;
+  background: var(--bg);
+}
+
+.find-box > .icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+.find-box .clear {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.find-box .clear .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--ink-2);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip small {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  font-weight: 700;
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.chip[aria-pressed='true'] small {
+  color: color-mix(in oklab, var(--accent-ink) 80%, transparent);
+}
+
+.find-count {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.find-count button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+  padding: 6px 0;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.find-empty {
+  text-align: center;
+  padding: 28px 8px;
+  color: var(--ink-2);
+}
+
+.find-empty b {
+  display: block;
+  font-size: 1.0625rem;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.find-empty .btn {
+  margin-top: 12px;
+}
+
+.game-card mark {
+  background: var(--p5-bg);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
 .game-list {
   list-style: none;
   margin: var(--space-5) 0 0;

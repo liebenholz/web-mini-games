@@ -10,6 +10,8 @@ async function expectAllButtonsOnScreen(page: Page) {
     const box = await button.boundingBox();
     if (!box) continue;
     expect(box.x, await button.innerText()).toBeGreaterThanOrEqual(0);
+    // 메인의 카테고리 칩 줄은 옆으로 밀어 보는 줄이라 오른쪽 끝은 화면 밖일 수 있다 (왼쪽 칩은 보여야 한다)
+    if (await button.evaluate((el) => Boolean(el.closest('.chips')))) continue;
     expect(box.x + box.width).toBeLessThanOrEqual(width + 0.5);
     expect(box.height).toBeGreaterThanOrEqual(40); // 터치 가능한 높이
   }

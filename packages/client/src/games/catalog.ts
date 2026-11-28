@@ -4,6 +4,16 @@
  */
 export type GameCategory = 'dice' | 'card' | 'board' | 'number' | 'party';
 
+/** 메인 화면 필터 칩의 순서와 이름 (2026-11-28 검색·필터) */
+export const CATEGORY_ORDER: readonly GameCategory[] = ['party', 'board', 'card', 'dice', 'number'];
+export const CATEGORY_LABEL: Readonly<Record<GameCategory, string>> = {
+  party: '파티',
+  board: '보드',
+  card: '카드',
+  dice: '주사위',
+  number: '숫자',
+};
+
 export interface GameCatalogEntry {
   /** 주소에 쓰는 이름: /<id>, /<id>/r/<코드> */
   readonly id: string;

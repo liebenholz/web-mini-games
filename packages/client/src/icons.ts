@@ -30,6 +30,7 @@ export const icons = {
   bomb: wrap(
     '<circle cx="10" cy="14" r="7"/><path d="M14.6 9.4l1.9-1.9 1.6 1.6-1.9 1.9"/><path d="M18 7l1.2-1.2M20.3 8.6l1.4.2M18.6 4.4l.2-1.4"/>',
   ),
+  search: wrap('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'),
   check: wrap('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 10"/>'),
   arrowUp: wrap('<path d="M12 19V5M6 11l6-6 6 6"/>'),
   arrowDown: wrap('<path d="M12 5v14M6 13l6 6 6-6"/>'),
