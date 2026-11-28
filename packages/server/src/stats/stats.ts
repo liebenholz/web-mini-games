@@ -115,6 +115,11 @@ export function finalizeMetrics(raw: RawGameMetrics): GameMetrics {
       extra.autoMoveRate =
         n >= MIN_GAMES_FOR_RATE && raw.movesSum > 0 ? round(raw.autoMoves / raw.movesSum, 3) : null;
       break;
+    case 'treasure':
+      extra.avgReplays = avg(raw.movesSum, n);
+      extra.avgAutoPicks = avg(raw.autoMoves, n);
+      extra.tieRate = rate(raw.forcedGames);
+      break;
     case 'balloon':
       extra.avgTurns = avg(raw.movesSum, n);
       extra.autoTurnRate =

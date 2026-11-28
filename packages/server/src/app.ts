@@ -7,13 +7,24 @@ import {
   type Presence,
 } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
-import { balloon, bulls, GAME_ID, gomoku, oneCard, parseStatsRange, reversi, updown } from '@wmg/rules';
+import {
+  balloon,
+  bulls,
+  treasure,
+  GAME_ID,
+  gomoku,
+  oneCard,
+  parseStatsRange,
+  reversi,
+  updown,
+} from '@wmg/rules';
 import type { ServerConfig } from './config.js';
 import { LiarsDiceRoom } from './games/liars-dice/LiarsDiceRoom.js';
 import { GomokuRoom } from './games/gomoku/GomokuRoom.js';
 import { ReversiRoom } from './games/reversi/ReversiRoom.js';
 import { UpdownRoom } from './games/updown-bomb/UpdownRoom.js';
 import { BalloonRoom } from './games/balloon/BalloonRoom.js';
+import { TreasureRoom } from './games/treasure/TreasureRoom.js';
 import { BullsRoom } from './games/bulls-and-cows/BullsRoom.js';
 import { OneCardRoom } from './games/one-card/OneCardRoom.js';
 import { activeRooms, runtime } from './games/liars-dice/runtime.js';
@@ -111,6 +122,7 @@ export function createGameServer({
       [reversi.REVERSI_ROOM_TYPE]: defineRoom(ReversiRoom),
       [updown.UPDOWN_ROOM_TYPE]: defineRoom(UpdownRoom),
       [balloon.BALLOON_ROOM_TYPE]: defineRoom(BalloonRoom),
+      [treasure.TREASURE_ROOM_TYPE]: defineRoom(TreasureRoom),
       [oneCard.ONE_CARD_ROOM_TYPE]: defineRoom(OneCardRoom),
       [bulls.BULLS_ROOM_TYPE]: defineRoom(BullsRoom),
     },

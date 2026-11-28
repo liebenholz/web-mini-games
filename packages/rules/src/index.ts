@@ -22,5 +22,8 @@ export * as updown from './games/updown-bomb/index.js';
 
 /** 풍선 터뜨리기 룰 엔진 (docs/specs/balloon.md): balloon.pump(...) */
 export * as balloon from './games/balloon/index.js';
+
+/** 보물 찾기 룰 엔진 (docs/specs/treasure.md): treasure.resolveRound(...) */
+export * as treasure from './games/treasure/index.js';
 export * from './stats.js';
 export * from './clientErrors.js';

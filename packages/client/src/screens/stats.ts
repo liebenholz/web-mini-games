@@ -297,6 +297,9 @@ const EXTRA_LABELS: Readonly<Record<string, { label: string; kind: 'rate' | 'avg
   autoBidRate: { label: '시간 초과로 대신 낸 선언', kind: 'rate' },
   passRate: { label: '넘김이 나온 판', kind: 'rate' },
   autoMoveRate: { label: '시간 초과로 대신 둔 수', kind: 'rate' },
+  avgReplays: { label: '평균 동점 재대결', kind: 'avg', unit: '번' },
+  avgAutoPicks: { label: '시간 초과로 대신 고른 칸(판당)', kind: 'avg', unit: '칸' },
+  tieRate: { label: '동점이 나온 판', kind: 'rate' },
   autoTurnRate: { label: '시간 초과로 대신 분 차례', kind: 'rate' },
   forcedRate: { label: '마지막 한 숫자로 끝난 판', kind: 'rate' },
 };

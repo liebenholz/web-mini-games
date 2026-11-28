@@ -3177,6 +3177,264 @@ button.game-main:focus-visible,
   }
 }
 
+/* ───── 보물 찾기 (treasure.md 8장, 시안 2026-11-28). 틀은 업다운(ud-*)을 같이 쓴다 ───── */
+.ud-body.th-body {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.th-body .ud-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.th-board {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+}
+
+.th-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+}
+
+.th-axis {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+  text-align: center;
+  font-weight: 600;
+}
+
+.th-cell {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.th-cell:disabled {
+  cursor: default;
+}
+
+.th-cell.cursor {
+  box-shadow: inset 0 0 0 2px var(--line-strong);
+}
+
+.th-cell.sel {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 3px var(--accent);
+  color: var(--accent);
+}
+
+.th-cell.locked {
+  background: var(--accent);
+  color: #fff;
+}
+
+.th-cell.treasure {
+  background: var(--p5-bg);
+}
+
+.th-cell .gem {
+  width: 78%;
+  color: var(--p5-fg);
+}
+
+.th-cell .avatar.dot {
+  width: 76%;
+  height: auto;
+  aspect-ratio: 1;
+  font-size: 0.6875rem;
+}
+
+.th-cell .avatar.dot.far {
+  box-shadow: 0 0 0 3px var(--danger);
+}
+
+.th-cell .avatar.dot.corner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 55%;
+}
+
+.ud-p {
+  position: relative;
+}
+
+.ud-p .chk {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--success);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.625rem;
+  font-weight: 800;
+}
+
+.ud-p.pass {
+  opacity: 0.5;
+}
+
+.th-lab {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  font-weight: 600;
+  padding: 0 2px;
+  margin-bottom: 4px;
+}
+
+.th-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+
+.th-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.th-bar.urgent i {
+  background: var(--danger);
+}
+
+.th-confirm {
+  min-height: 52px;
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+
+.th-note {
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--p5-bg);
+  color: var(--p5-fg);
+}
+
+.th-rank {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 6px 10px;
+}
+
+.th-rank .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.th-rank .row:last-child {
+  border-bottom: 0;
+}
+
+.th-rank .row .nm {
+  flex: 1;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.th-rank .row .d {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+.th-rank .row.far,
+.th-rank .row.far .d {
+  color: var(--danger);
+}
+
+.th-rank .row.far .d {
+  font-weight: 800;
+}
+
+.th-rank .tag {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  background: var(--danger);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  padding: 1px 8px;
+}
+
+.th-rank .avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.6875rem;
+}
+
+.th-hit {
+  background: var(--bg);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.th-hit.pass {
+  border-color: var(--success);
+}
+
+.th-hit .t {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 4px 0 0;
+}
+
+.th-hit .s {
+  color: var(--ink-2);
+  margin: 4px 0 0;
+  font-size: 0.9375rem;
+}
+
+.th-hit .gemb {
+  width: 52px;
+  margin: 0 auto;
+  color: var(--p5-fg);
+}
+
+.th-hit .gemb svg {
+  width: 100%;
+}
+
 /* ───── 원카드 (one-card.md 11장, 시안) ───── */
 .fixed-rules {
   display: flex;

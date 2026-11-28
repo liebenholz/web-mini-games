@@ -63,6 +63,10 @@ describe('게임별 진행 지표 (docs/specs/stats.md ST-08~ST-12)', () => {
       avgTurns: 12,
       autoTurnRate: 0.05,
     });
+    expect(
+      finalizeMetrics({ ...emptyRaw('treasure'), games: 10, movesSum: 5, autoMoves: 15, forcedGames: 3 })
+        .extra,
+    ).toEqual({ avgReplays: 0.5, avgAutoPicks: 1.5, tieRate: 0.3 });
   });
 
   it('ST-08~ST-10: 메모리 저장소로 끝난 판, 이탈, 봇, 모두 나간 판을 센다', async () => {
