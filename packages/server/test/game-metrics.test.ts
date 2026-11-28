@@ -60,8 +60,8 @@ describe('게임별 진행 지표 (docs/specs/stats.md ST-08~ST-12)', () => {
         .extra,
     ).toEqual({ avgMoves: 7, autoMoveRate: 0.1, forcedRate: 0.2 });
     expect(finalizeMetrics({ ...emptyRaw('balloon'), games: 5, movesSum: 60, autoMoves: 3 }).extra).toEqual({
-      avgMoves: 12,
-      autoMoveRate: 0.05,
+      avgTurns: 12,
+      autoTurnRate: 0.05,
     });
   });
 

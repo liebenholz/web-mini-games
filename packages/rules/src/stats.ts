@@ -27,7 +27,7 @@ export const MIN_GAMES_FOR_RATE = 5;
 /**
  * ST-10: 기간 안에 끝난 판으로 센 게임별 지표. 비율은 0~1.
  * extra 키: 오목 timeoutRate·avgMoves, 숫자야구 avgAttempts·drawRate, 원카드 bankruptRate·avgTurns,
- * 거짓말쟁이 주사위 autoBidRate, 리버시 avgMoves·passRate·autoMoveRate, 업다운 avgMoves·autoMoveRate·forcedRate, 풍선 avgMoves(차례 수)·autoMoveRate
+ * 거짓말쟁이 주사위 autoBidRate, 리버시 avgMoves·passRate·autoMoveRate, 업다운 avgMoves·autoMoveRate·forcedRate, 풍선 avgTurns·autoTurnRate
  */
 export interface GameMetrics {
   /** 서버 방 종류 (liars_dice, gomoku …) */
