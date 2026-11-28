@@ -522,6 +522,40 @@ describe('BalloonRoom 통합 (balloon.md)', () => {
   });
 });
 
+describe('TreasureRoom 통합 (treasure.md)', () => {
+  it('두 사람이 동시에 고르고 확정하면 공개되고, 그 전에는 남의 선택과 보물이 오가지 않는다', async () => {
+    const room = await colyseus.sdk.create('treasure', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { fillWithBots: false, pickSeconds: 30 },
+    });
+    const host = spy(room);
+    await waitFor(() => host.playerId !== '');
+    const guestSpy = await joinRoom(host.room.roomId, newGuest(), '손님');
+    guestSpy.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as { phase: string; roundId: string; hasReveal: boolean };
+    await waitFor(() => state.phase === 'PICKING');
+    const roundId = state.roundId;
+    host.room.send('pick', { x: 0, y: 0, roundId });
+    await waitFor(() => has(host, 'your_pick'));
+    expect(has(guestSpy, 'your_pick')).toBe(false);
+    host.room.send('lock_pick', { roundId });
+    await waitFor(() => has(guestSpy, 'pick_locked'));
+    expect(state.phase).toBe('PICKING');
+    for (const m of guestSpy.messages) expect(Object.keys(m.payload ?? {})).not.toContain('treasure');
+    guestSpy.room.send('pick', { x: 8, y: 8, roundId });
+    guestSpy.room.send('lock_pick', { roundId });
+    await waitFor(() => has(host, 'reveal') && has(guestSpy, 'reveal'));
+    expect(host.messages.find((m) => m.type === 'reveal')?.payload).toMatchObject({
+      picks: expect.any(Array),
+      treasure: expect.any(Object),
+    });
+    await waitFor(() => state.hasReveal);
+  });
+});
+
 describe('OneCardRoom 통합 (Phase 2 M3)', () => {
   it('두 사람 + 봇 2명으로 시작하면 각자 자기 패 7장만 받고, 공유 상태에는 패가 없다 (C-40)', async () => {
     const room = await colyseus.sdk.create('one_card', {

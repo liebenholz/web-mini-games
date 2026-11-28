@@ -1,4 +1,4 @@
-import { balloon, bulls, GAME_ID, gomoku, oneCard, reversi, updown } from '@wmg/rules';
+import { balloon, bulls, treasure, GAME_ID, gomoku, oneCard, reversi, updown } from '@wmg/rules';
 import { bullsRules } from './bulls-and-cows/rules.js';
 import { CATALOG, type GameCatalogEntry } from './catalog.js';
 import { asFlow, type GameFlow } from './flow.js';
@@ -8,6 +8,7 @@ import { oneCardRules } from './one-card/rules.js';
 import { reversiRules } from './reversi/rules.js';
 import { updownRules } from './updown-bomb/rules.js';
 import { balloonRules } from './balloon/rules.js';
+import { treasureRules } from './treasure/rules.js';
 
 export type { GameCategory } from './catalog.js';
 export { LEGACY_GAME_ID } from '../identity.js';
@@ -60,6 +61,11 @@ const IMPLEMENTED: Record<string, Pick<GameInfo, 'roomType' | 'rules' | 'loadFlo
     roomType: balloon.BALLOON_ROOM_TYPE,
     rules: balloonRules,
     loadFlow: () => import('./balloon/flow.js').then((m) => asFlow(m.balloonFlow)),
+  },
+  treasure: {
+    roomType: treasure.TREASURE_ROOM_TYPE,
+    rules: treasureRules,
+    loadFlow: () => import('./treasure/flow.js').then((m) => asFlow(m.treasureFlow)),
   },
 };
 

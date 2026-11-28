@@ -96,4 +96,14 @@ export const CATALOG: readonly GameCatalogEntry[] = [
     category: 'party',
     status: 'available',
   },
+  {
+    id: 'treasure',
+    name: '보물 찾기',
+    tagline: '보물에서 가장 멀리 고르면 당첨',
+    lead: '모두 동시에 몰래 한 칸씩 골라요. 보물에서 가장 먼 사람이 당첨! 같은 거리면 다시 골라요.',
+    players: '2~10명',
+    minutes: '1~2분',
+    category: 'party',
+    status: 'available',
+  },
 ];

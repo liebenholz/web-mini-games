@@ -13,7 +13,9 @@ describe('게임 목록', () => {
       'reversi',
       'updown-bomb',
       'balloon',
+      'treasure',
     ]);
+    expect(findGame('treasure')).toMatchObject({ roomType: 'treasure', category: 'party' });
     expect(findGame('balloon')).toMatchObject({ roomType: 'balloon', category: 'party' });
     expect(findGame('updown-bomb')).toMatchObject({ roomType: 'updown_bomb', category: 'party' });
     expect(findGame('bulls-and-cows')?.roomType).toBe('bulls_and_cows');
