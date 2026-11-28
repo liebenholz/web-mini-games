@@ -116,4 +116,14 @@ export const CATALOG: readonly GameCatalogEntry[] = [
     category: 'party',
     status: 'available',
   },
+  {
+    id: 'yacht',
+    name: '요트 주사위',
+    tagline: '주사위 5개로 12칸을 채워 점수를 겨뤄요',
+    lead: '한 차례에 3번까지 굴려 12가지 족보 중 빈칸 하나에 기록해요. 합계가 가장 높은 사람이 이겨요.',
+    players: '2~4명',
+    minutes: '8~12분',
+    category: 'dice',
+    status: 'available',
+  },
 ];

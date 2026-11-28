@@ -20,7 +20,7 @@ describe('메인 화면 검색·필터 (순수 계산)', () => {
   it('카테고리 칩: 그 카테고리 게임만', () => {
     expect(ids({ q: '', c: 'party' })).toEqual(['updown-bomb', 'balloon', 'treasure']);
     expect(ids({ q: '', c: 'board' })).toEqual(['gomoku', 'reversi']);
-    expect(ids({ q: '', c: 'dice' })).toEqual(['liars-dice']);
+    expect(ids({ q: '', c: 'dice' })).toEqual(['liars-dice', 'yacht']);
   });
 
   it('검색: 이름, 한 줄 소개, 카테고리 이름에서 찾는다', () => {

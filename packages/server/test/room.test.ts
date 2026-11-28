@@ -556,6 +556,40 @@ describe('TreasureRoom 통합 (treasure.md)', () => {
   });
 });
 
+describe('YachtRoom 통합 (yacht.md)', () => {
+  it('두 사람이 굴리고 기록하면 주사위와 점수가 양쪽에 같게 보이고 차례가 넘어간다', async () => {
+    const room = await colyseus.sdk.create('yacht', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { fillWithBots: false, turnSeconds: 60 },
+    });
+    const host = spy(room);
+    await waitFor(() => host.playerId !== '');
+    const guestSpy = await joinRoom(host.room.roomId, newGuest(), '손님');
+    guestSpy.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as {
+      phase: string;
+      currentTurn: string;
+      turnId: string;
+      rollNo: number;
+      dice: number[];
+    };
+    await waitFor(() => state.phase === 'PLAYING' && state.turnId !== '');
+    const mine = state.currentTurn === host.playerId ? host : guestSpy;
+    const other = mine === host ? guestSpy : host;
+    other.room.send('roll', { keep: [false, false, false, false, false], turnId: state.turnId });
+    await waitFor(() => has(other, 'error'));
+    mine.room.send('roll', { keep: [false, false, false, false, false], turnId: state.turnId });
+    await waitFor(() => has(host, 'dice_rolled') && has(guestSpy, 'dice_rolled'));
+    await waitFor(() => state.rollNo === 1 && state.dice.length === 5);
+    mine.room.send('score', { category: 6, turnId: state.turnId });
+    await waitFor(() => has(host, 'scored') && has(guestSpy, 'scored'));
+    await waitFor(() => state.currentTurn === other.playerId);
+  });
+});
+
 describe('OneCardRoom 통합 (Phase 2 M3)', () => {
   it('두 사람 + 봇 2명으로 시작하면 각자 자기 패 7장만 받고, 공유 상태에는 패가 없다 (C-40)', async () => {
     const room = await colyseus.sdk.create('one_card', {
