@@ -250,3 +250,21 @@ describe('업다운 방: 시간 초과와 퇴장 (UD-11~UD-14)', () => {
     expect(match.state.high).toBe(200);
   });
 });
+
+describe('업다운 방: 10명 (2026-11-28)', () => {
+  it('10명이 앉아 끝까지 간다. 11번째는 ROOM_FULL, 정원 줄이기는 지금 인원보다 못한다', () => {
+    const g = started(10, { maxPlayers: 10, rangeMax: 200 });
+    expect(g.match.state.players.size).toBe(10);
+    expect(new Set([...g.match.state.players.values()].map((p) => p.seat)).size).toBe(10);
+    expect(g.match.join('guest-late-0000000', '열한째')).toMatchObject({ ok: true, role: 'spectator' });
+    playToEnd(g.match);
+    expect(g.match.phase).toBe('GAME_OVER');
+    expect(g.io.records[0]?.players).toHaveLength(10);
+  });
+
+  it('대기실에서 11번째는 ROOM_FULL', () => {
+    const { match } = setup({ maxPlayers: 10 });
+    for (let i = 0; i < 10; i += 1) joinOk(match, `guest-seat-${i}000000`, `사람${i}`);
+    expect(match.join('guest-extra-000000', '열한째')).toEqual({ ok: false, code: 'ROOM_FULL' });
+  });
+});

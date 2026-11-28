@@ -1,9 +1,12 @@
-import { MAX_PLAYERS, MIN_PLAYERS, updown } from '@wmg/rules';
+import { MIN_PLAYERS, updown } from '@wmg/rules';
 import { segmented, toggle } from '../../screens/waitingParts.js';
 import { renderWaitingShell } from '../../screens/waitingShell.js';
 import type { UpdownOptionsView, UpdownSession, UpdownSnapshot } from './session.js';
 
-const PLAYER_CHOICES = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => MIN_PLAYERS + i);
+const PLAYER_CHOICES = Array.from(
+  { length: updown.UPDOWN_MAX_PLAYERS - MIN_PLAYERS + 1 },
+  (_, i) => MIN_PLAYERS + i,
+);
 
 /** "범위 1~100 · 최대 6명 · 턴 15초" */
 export function optionsSummary(o: UpdownOptionsView): string {

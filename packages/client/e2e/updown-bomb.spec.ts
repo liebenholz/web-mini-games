@@ -89,3 +89,31 @@ test('PC: 숫자키와 Enter로 말한다', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('ud-log').locator('li').first()).toContainText(String(low));
 });
+
+test('10명 방: 360px에서 참가자 칩 5칸×2줄, 범위와 키패드와 말하기가 첫 화면 안에 있다', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('wmg.nickname', '열명테스터'));
+  await page.goto('/updown-bomb');
+  await page.getByRole('button', { name: '방 만들기' }).click();
+  const players = page.getByRole('group', { name: '최대 인원' });
+  await players.getByRole('button', { name: '10', exact: true }).click();
+  await expect(players.getByRole('button', { name: '10', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  // 2~10 선택지가 360px를 넘치지 않는다
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const last = players.getByRole('button', { name: '10', exact: true });
+  await expect(last).toBeInViewport({ ratio: 1 });
+  await page
+    .getByRole('group', { name: '턴 제한(초) · 넘기면 대신 말해요' })
+    .getByRole('button', { name: '30' })
+    .click();
+  await page.getByRole('button', { name: '게임 시작' }).click();
+  await expect(page.getByTestId('ud-range')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('.ud-players.ten .ud-p')).toHaveCount(10);
+  // 칩 두 줄이 위쪽을 조금만 차지해서 범위가 첫 화면 안에 들어온다
+  await expect(page.getByTestId('ud-range')).toBeInViewport({ ratio: 1 });
+  // 내 차례인 동안 키패드와 말하기가 첫 화면 안 (E2E의 봇은 빨라서 내 차례가 없이 끝날 수도 있다)
+  if ((await page.getByTestId('ud-call').count()) > 0)
+    await expect(page.getByTestId('ud-call')).toBeInViewport({ ratio: 1 });
+});

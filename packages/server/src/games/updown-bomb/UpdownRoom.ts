@@ -1,4 +1,4 @@
-import { MAX_PLAYERS, updown } from '@wmg/rules';
+import { updown } from '@wmg/rules';
 import { GameRoom } from '../../framework/game/GameRoom.js';
 import type { Rng } from '../../framework/rng.js';
 import { runtime } from '../liars-dice/runtime.js';
@@ -10,7 +10,7 @@ import { toUpdownSummary } from './record.js';
  * 여기서는 옵션 검증과 판 기록 저장만 정한다.
  */
 export class UpdownRoom extends GameRoom<UpdownMatch, updown.UpdownRoomOptions> {
-  override maxClients = MAX_PLAYERS + UPDOWN_SPECTATOR_LIMIT;
+  override maxClients = updown.UPDOWN_MAX_PLAYERS + UPDOWN_SPECTATOR_LIMIT;
   protected readonly gameMessages = ['call_number'] as const;
 
   protected parseOptions(rawOptions: unknown): updown.UpdownRoomOptions | null {
