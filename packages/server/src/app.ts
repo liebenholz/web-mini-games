@@ -11,6 +11,7 @@ import {
   balloon,
   bulls,
   treasure,
+  thief,
   yacht,
   GAME_ID,
   gomoku,
@@ -26,6 +27,7 @@ import { ReversiRoom } from './games/reversi/ReversiRoom.js';
 import { UpdownRoom } from './games/updown-bomb/UpdownRoom.js';
 import { BalloonRoom } from './games/balloon/BalloonRoom.js';
 import { TreasureRoom } from './games/treasure/TreasureRoom.js';
+import { ThiefRoom } from './games/thief/ThiefRoom.js';
 import { YachtRoom } from './games/yacht/YachtRoom.js';
 import { BullsRoom } from './games/bulls-and-cows/BullsRoom.js';
 import { OneCardRoom } from './games/one-card/OneCardRoom.js';
@@ -126,6 +128,7 @@ export function createGameServer({
       [balloon.BALLOON_ROOM_TYPE]: defineRoom(BalloonRoom),
       [treasure.TREASURE_ROOM_TYPE]: defineRoom(TreasureRoom),
       [yacht.YACHT_ROOM_TYPE]: defineRoom(YachtRoom),
+      [thief.THIEF_ROOM_TYPE]: defineRoom(ThiefRoom),
       [oneCard.ONE_CARD_ROOM_TYPE]: defineRoom(OneCardRoom),
       [bulls.BULLS_ROOM_TYPE]: defineRoom(BullsRoom),
     },

@@ -30,3 +30,6 @@ export * as treasure from './games/treasure/index.js';
 export * as yacht from './games/yacht/index.js';
 export * from './stats.js';
 export * from './clientErrors.js';
+
+/** 도둑잡기 룰 엔진 (docs/specs/thief.md): thief.draw(...) */
+export * as thief from './games/thief/index.js';

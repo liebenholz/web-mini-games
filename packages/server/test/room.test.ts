@@ -590,6 +590,44 @@ describe('YachtRoom 통합 (yacht.md)', () => {
   });
 });
 
+describe('ThiefRoom 통합 (thief.md)', () => {
+  it('두 사람이 시작하면 각자 자기 패만 받고, 뽑으면 차례가 넘어간다', async () => {
+    const room = await colyseus.sdk.create('thief', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { fillWithBots: false, turnSeconds: 30 },
+    });
+    const host = spy(room);
+    await waitFor(() => host.playerId !== '');
+    const guestSpy = await joinRoom(host.room.roomId, newGuest(), '손님');
+    guestSpy.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as {
+      phase: string;
+      currentTurn: string;
+      targetId: string;
+      turnId: string;
+      draws: number;
+    };
+    await waitFor(() => state.phase === 'PLAYING' && state.turnId !== '');
+    await waitFor(() => has(host, 'your_hand') && has(guestSpy, 'your_hand'));
+    const hostHand = host.messages.find((m) => m.type === 'your_hand')?.payload as { cards: string[] };
+    const guestHand = guestSpy.messages.find((m) => m.type === 'your_hand')?.payload as { cards: string[] };
+    expect(hostHand.cards.length + guestHand.cards.length).toBeGreaterThan(0);
+    // 상대의 패 카드가 내 메시지에 없다
+    for (const c of guestHand.cards)
+      expect(JSON.stringify(host.messages.map((m) => m.payload))).not.toContain(`"${c}"`);
+    const mine = state.currentTurn === host.playerId ? host : guestSpy;
+    const other = mine === host ? guestSpy : host;
+    other.room.send('draw', { index: 0, turnId: state.turnId });
+    await waitFor(() => has(other, 'error'));
+    mine.room.send('draw', { index: 0, turnId: state.turnId });
+    await waitFor(() => has(host, 'drawn') && has(guestSpy, 'drawn'));
+    await waitFor(() => state.draws === 1 || state.phase === 'GAME_OVER');
+  });
+});
+
 describe('OneCardRoom 통합 (Phase 2 M3)', () => {
   it('두 사람 + 봇 2명으로 시작하면 각자 자기 패 7장만 받고, 공유 상태에는 패가 없다 (C-40)', async () => {
     const room = await colyseus.sdk.create('one_card', {

@@ -4,15 +4,15 @@ const cards = (page: Page) => page.locator('.game-list .game-card');
 
 test('칩으로 거르면 그 카테고리만 보이고 주소가 바뀐다. 다시 누르면 전체', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByTestId('hub-count')).toContainText('게임 9개');
-  await expect(cards(page)).toHaveCount(9);
+  await expect(page.getByTestId('hub-count')).toContainText('게임 10개');
+  await expect(cards(page)).toHaveCount(10);
   await page.getByTestId('chip-party').click();
-  await expect(cards(page)).toHaveCount(3);
-  await expect(page.getByTestId('hub-count')).toContainText('3개 게임');
+  await expect(cards(page)).toHaveCount(4);
+  await expect(page.getByTestId('hub-count')).toContainText('4개 게임');
   await expect(page.getByTestId('chip-party')).toHaveAttribute('aria-pressed', 'true');
   await expect(page).toHaveURL(/\/\?c=party$/);
   await page.getByTestId('chip-party').click();
-  await expect(cards(page)).toHaveCount(9);
+  await expect(cards(page)).toHaveCount(10);
   await expect(page).toHaveURL(/\/$/);
 });
 
@@ -27,7 +27,7 @@ test('검색은 입력하는 대로 걸러지고 맞는 글자를 표시하며, 
   await expect(page.getByTestId('hub-empty')).toBeVisible();
   await expect(page.getByTestId('hub-empty')).toContainText('찾는 게임이 없어요');
   await page.getByTestId('hub-empty').getByRole('button', { name: '필터 지우기' }).click();
-  await expect(cards(page)).toHaveCount(9);
+  await expect(cards(page)).toHaveCount(10);
   await expect(page.getByTestId('hub-search')).toHaveValue('');
 });
 
@@ -48,11 +48,11 @@ test('Esc와 ✕로 검색어를 지운다. 360px에서 가로로 넘치지 않�
   await input.fill('오목');
   await expect(cards(page)).toHaveCount(1);
   await page.getByRole('button', { name: '검색어 지우기' }).click();
-  await expect(cards(page)).toHaveCount(9);
+  await expect(cards(page)).toHaveCount(10);
   await input.fill('원카드');
   await input.press('Escape');
   await expect(input).toHaveValue('');
-  await expect(cards(page)).toHaveCount(9);
+  await expect(cards(page)).toHaveCount(10);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await expect(input).toBeInViewport();
   await expect(page.getByTestId('chip-all')).toBeInViewport();

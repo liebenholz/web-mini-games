@@ -5176,3 +5176,237 @@ button.game-main:focus-visible,
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 }
+
+/* ───── 도둑잡기 (thief.md 7장, 시안 2026-11-28). 틀은 요트(yt-*)와 원카드 카드(oc-card)를 같이 쓴다 ───── */
+.tf-pairs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.tf-pairs b {
+  color: var(--ink-2);
+}
+.tf-pair {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+.tf-target {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 12px 10px 10px;
+}
+.tf-target h3 {
+  font-size: 0.8125rem;
+  margin: 0 0 12px;
+  color: var(--ink-2);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tf-target h3 .avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.6875rem;
+}
+.tf-backs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 5px;
+  justify-content: center;
+}
+.tf-gap {
+  height: 14px;
+}
+.tf-back {
+  position: relative;
+  width: 38px;
+  height: 54px;
+  border-radius: 7px;
+  border: 1px solid var(--accent);
+  background: repeating-linear-gradient(45deg, var(--accent-soft) 0 6px, var(--bg) 6px 12px);
+  padding: 0;
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.6875rem;
+}
+.tf-back span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -16px;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.tf-back:disabled {
+  cursor: default;
+}
+.tf-back.sel {
+  transform: translateY(-8px);
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  box-shadow: var(--shadow);
+}
+.tf-back.sel span {
+  color: var(--accent);
+  font-weight: 800;
+}
+.tf-hand-wrap {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 10px 10px 8px;
+}
+.tf-hand-wrap h3 {
+  font-size: 0.8125rem;
+  margin: 0 0 8px;
+  color: var(--ink-2);
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+}
+.tf-hand {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 4px;
+}
+.tf-hand.tight {
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.tf-hand.tight .oc-card {
+  --w: 42px;
+  margin-left: -14px;
+  flex: none;
+  position: relative;
+}
+.tf-hand.tight .oc-card:first-child {
+  margin-left: 0;
+}
+.tf-hand .joker-hl {
+  border: 2px solid var(--danger);
+  box-shadow: var(--shadow);
+}
+.tf-safe {
+  text-align: center;
+  margin: 8px 0;
+}
+.tf-flash {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--p4-bg);
+  color: var(--p4-fg);
+}
+.tf-flash svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.tf-out {
+  font-size: 0.625rem;
+  font-weight: 800;
+  background: var(--p2-bg);
+  color: var(--p2-fg);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: auto;
+}
+.tf-p.out {
+  opacity: 0.55;
+}
+.tf-wait {
+  margin-top: 0;
+}
+.tf-hit {
+  background: var(--bg);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tf-hit.pass {
+  border-color: var(--success);
+}
+.tf-hit .t {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 6px 0 0;
+}
+.tf-hit .s {
+  color: var(--ink-2);
+  margin: 4px 0 0;
+  font-size: 0.9375rem;
+}
+.tf-final {
+  display: grid;
+  gap: 6px;
+}
+.tf-final .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 0.875rem;
+}
+.tf-final .row .nm {
+  font-weight: 700;
+  min-width: 64px;
+}
+.tf-final .row .cards {
+  margin-left: auto;
+  display: flex;
+  gap: 3px;
+}
+.tf-final .row .cards .oc-card {
+  --w: 26px;
+}
+.tf-final .row .tag {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.tf-final .row.lose {
+  border: 2px solid var(--danger);
+}
+.tf-final .row.lose .tag {
+  background: var(--danger);
+  color: #fff;
+}
+.tf-sum {
+  text-align: center;
+  margin: 0;
+}

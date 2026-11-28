@@ -126,4 +126,14 @@ export const CATALOG: readonly GameCatalogEntry[] = [
     category: 'dice',
     status: 'available',
   },
+  {
+    id: 'thief',
+    name: '도둑잡기',
+    tagline: '조커를 마지막까지 들고 있으면 당첨',
+    lead: '다음 사람의 패에서 한 장씩 뽑아 같은 숫자 짝을 내려놓아요. 조커를 끝까지 든 한 명이 당첨!',
+    players: '2~6명',
+    minutes: '2~4분',
+    category: 'party',
+    status: 'available',
+  },
 ];
