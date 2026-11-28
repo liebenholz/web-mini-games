@@ -120,6 +120,11 @@ export function finalizeMetrics(raw: RawGameMetrics): GameMetrics {
       extra.avgAutoPicks = avg(raw.autoMoves, n);
       extra.tieRate = rate(raw.forcedGames);
       break;
+    case 'thief':
+      extra.avgMoves = avg(raw.movesSum, n);
+      extra.autoMoveRate =
+        n >= MIN_GAMES_FOR_RATE && raw.movesSum > 0 ? round(raw.autoMoves / raw.movesSum, 3) : null;
+      break;
     case 'yacht':
       extra.bonusRate = rate(raw.forcedGames);
       extra.autoTurnRate =

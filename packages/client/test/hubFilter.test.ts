@@ -18,7 +18,7 @@ describe('메인 화면 검색·필터 (순수 계산)', () => {
   });
 
   it('카테고리 칩: 그 카테고리 게임만', () => {
-    expect(ids({ q: '', c: 'party' })).toEqual(['updown-bomb', 'balloon', 'treasure']);
+    expect(ids({ q: '', c: 'party' })).toEqual(['updown-bomb', 'balloon', 'treasure', 'thief']);
     expect(ids({ q: '', c: 'board' })).toEqual(['gomoku', 'reversi']);
     expect(ids({ q: '', c: 'dice' })).toEqual(['liars-dice', 'yacht']);
   });
@@ -29,13 +29,13 @@ describe('메인 화면 검색·필터 (순수 계산)', () => {
     // 한 줄 소개에만 있는 낱말
     expect(ids({ q: '스트라이크', c: '' })).toEqual(['bulls-and-cows']);
     // 카테고리 이름
-    expect(ids({ q: '파티', c: '' })).toEqual(['updown-bomb', 'balloon', 'treasure']);
+    expect(ids({ q: '파티', c: '' })).toEqual(['updown-bomb', 'balloon', 'treasure', 'thief']);
     expect(ids({ q: '주사위', c: '' })).toContain('liars-dice');
   });
 
   it('띄어 쓴 낱말은 모두 들어 있어야 하고, 칩과 함께 쓴다', () => {
     expect(ids({ q: '숫자 폭탄', c: '' })).toEqual(['updown-bomb']);
-    expect(ids({ q: '당첨', c: 'party' })).toHaveLength(3);
+    expect(ids({ q: '당첨', c: 'party' })).toHaveLength(4);
     expect(ids({ q: '오목', c: 'party' })).toEqual([]);
     expect(ids({ q: '체스', c: '' })).toEqual([]);
   });
@@ -48,7 +48,7 @@ describe('메인 화면 검색·필터 (순수 계산)', () => {
   it('칩 옆 게임 수', () => {
     const c = categoryCounts(CATALOG);
     expect(c['']).toBe(CATALOG.length);
-    expect(c.party).toBe(3);
+    expect(c.party).toBe(4);
     expect(c.board + c.card + c.dice + c.number + c.party).toBe(CATALOG.length);
   });
 });
