@@ -2044,6 +2044,89 @@ button.game-main:focus-visible,
   gap: var(--space-2);
 }
 
+/* 오목 무승부 제안 (gomoku.md G-38, 시안 2026-11-28) */
+.gm-draw {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gm-draw .btn {
+  flex: 1;
+  min-height: 44px;
+}
+
+.gm-draw .why {
+  flex: 1.4;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.gm-pending {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.gm-pending .sec {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-offer {
+  position: fixed;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  z-index: 9;
+  padding: var(--space-3);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.gm-offer[hidden] {
+  display: none;
+}
+
+.gm-offer strong {
+  font-size: 1rem;
+}
+
+.gm-offer .t {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+
+.gm-offer .t i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.gm-offer .acts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.gm-offer .acts .btn {
+  min-height: 48px;
+}
+
 .gomoku-result {
   position: fixed;
   left: 50%;
