@@ -86,7 +86,10 @@ export function ruleSetName(rules: GomokuRuleOptions): '렌주' | '자유 오목
 }
 
 export type GomokuPhase = 'WAITING' | 'STARTING' | 'PLAYING' | 'GAME_OVER';
-export type GomokuResult = 'five' | 'timeout' | 'draw';
+/** five 오목 / timeout 시간패 / draw 판이 다 참 / agreed 합의 무승부 (G-14) */
+export type GomokuResult = 'five' | 'timeout' | 'draw' | 'agreed';
+/** 제안이 끝난 이유 (G-16) */
+export type DrawDeclineReason = 'declined' | 'timeout' | 'gone';
 /** G-22, G-23: 상대에게 알리는 이유 */
 export type ReplaceReason = 'left' | 'disconnected' | 'returned';
 
@@ -99,6 +102,10 @@ export interface GomokuClientMessages {
   kick_player: { readonly playerId: string };
   rematch: Record<string, never>;
   leave_room: Record<string, never>;
+  /** G-14, G-15: 내 차례에 무승부를 제안한다 */
+  offer_draw: { readonly turnId: string };
+  /** G-16: 받은 제안에 답한다 */
+  answer_draw: { readonly accept: boolean };
   /** x, y: 0~14 (G-01) */
   place: { readonly x: number; readonly y: number; readonly turnId: string };
 }
@@ -119,6 +126,8 @@ export interface GomokuServerMessages {
     readonly moveNo: number;
     readonly isBot: boolean;
   };
+  draw_offered: { readonly playerId: string; readonly deadline: number; readonly serverNow: number };
+  draw_declined: { readonly playerId: string; readonly reason: DrawDeclineReason };
   player_replaced: { readonly playerId: string; readonly nickname: string; readonly reason: ReplaceReason };
   game_over: {
     readonly result: GomokuResult;

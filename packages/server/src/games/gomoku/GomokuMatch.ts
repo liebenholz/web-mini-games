@@ -65,6 +65,8 @@ export interface GomokuDeps {
 
 interface Member extends LobbyMember<GomokuPlayerState> {
   color: Color | null;
+  /** G-15: 이 돌 개수가 될 때까지 제안할 수 없다 */
+  drawBlockedUntil: number;
 }
 
 /**
@@ -78,6 +80,8 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
   #startedAt = new Date(0);
   #turnColor: Color = 'black';
   #turnId = '';
+  /** G-16: 대기 중인 무승부 제안. 그 동안 제안자의 턴 타이머는 멈춰 있고 남은 시간을 여기 둔다 */
+  #offer: { by: Member; remainingMs: number } | null = null;
 
   constructor(roomCode: string, options: Options, deps: GomokuDeps) {
     super(new GomokuState(), roomCode, options, deps);
@@ -105,7 +109,7 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
   }
 
   protected createMember(base: LobbyMember<GomokuPlayerState>): Member {
-    return { ...base, color: null };
+    return { ...base, color: null, drawBlockedUntil: 0 };
   }
 
   protected parseOptions(input: unknown): { ok: true; options: Options } | { ok: false } {
@@ -133,6 +137,8 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
   }
 
   protected notifyReplaced(m: Member, reason: ReplaceReason): void {
+    // G-16: 제안 중에 어느 쪽이든 나가거나 끊기면 제안은 거절로 끝난다
+    if (this.#offer && reason !== 'returned') this.#closeOffer('gone');
     this.io.broadcast('player_replaced', { playerId: m.id, nickname: m.nickname, reason });
   }
 
@@ -156,12 +162,16 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
 
   protected handleGame(m: Member, type: string, body: Record<string, unknown>): HandleResult {
     if (type === 'place') return this.#place(m, body);
+    if (type === 'offer_draw') return this.#offerDraw(m, body);
+    if (type === 'answer_draw') return this.#answerDraw(m, body);
     return fail('INVALID_MESSAGE', '알 수 없는 요청입니다.');
   }
 
   protected resetMemberForRematch(m: Member): void {
     m.color = null;
     m.view.color = '';
+    m.view.drawBlockedUntil = 0;
+    m.drawBlockedUntil = 0;
   }
 
   /** G-13: 같은 방 대기실로 */
@@ -197,6 +207,8 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
   }
 
   #clearBoard(): void {
+    this.#offer = null;
+    this.#clearOfferState();
     this.#board = gomoku.emptyBoard();
     for (let i = 0; i < gomoku.GOMOKU_CELLS; i += 1) this.state.board[i] = gomoku.EMPTY;
     this.#moves = [];
@@ -224,14 +236,18 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
       serverNow: this.scheduler.now(),
     });
     const turnId = this.#turnId;
-    // G-21: 사람이 마감까지 두지 않으면 시간패. 끊겨 있어도 같다 (G-23)
-    this.setTurnTimer(deadline - this.scheduler.now(), () => {
+    this.#armTurnTimer(turnId, deadline - this.scheduler.now());
+    if (player.controller === 'bot') this.#scheduleBot(turnId);
+  }
+
+  /** G-21: 사람이 마감까지 두지 않으면 시간패. 끊겨 있어도 같다 (G-23) */
+  #armTurnTimer(turnId: string, ms: number): void {
+    this.setTurnTimer(ms, () => {
       if (this.phase !== 'PLAYING' || this.#turnId !== turnId) return;
       const current = this.#byColor(this.#turnColor);
       if (current && current.controller === 'human')
         this.#finish('timeout', gomoku.otherColor(this.#turnColor), []);
     });
-    if (player.controller === 'bot') this.#scheduleBot(turnId);
   }
 
   #scheduleBot(turnId: string): void {
@@ -247,7 +263,82 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
   }
 
   /** G-03, G-07, GE-01~GE-05 */
+  /** G-14, G-15: 내 차례에, 서로 30수 이후, 거절당한 뒤 대기 중이 아닐 때, 상대가 사람일 때만 */
+  #offerDraw(m: Member, body: Record<string, unknown>): HandleResult {
+    if (this.phase !== 'PLAYING') return fail('INVALID_STATE', '대국 중이 아닙니다.');
+    if (m.spectator || !m.color || m.color !== this.#turnColor || m.controller !== 'human')
+      return fail('NOT_YOUR_TURN', '내 차례가 아닙니다.');
+    if (body.turnId !== this.#turnId) return fail('STALE_TURN', '이미 지난 차례입니다.');
+    if (this.#offer) return fail('INVALID_STATE', '이미 무승부를 제안했습니다.');
+    const opponent = this.#byColor(gomoku.otherColor(m.color));
+    // G-26: 봇이 맡은 자리는 제안을 받지 않는다
+    if (!opponent || opponent.controller !== 'human')
+      return fail('INVALID_STATE', '봇은 무승부를 받지 않습니다.');
+    const check = gomoku.drawOfferCheck(this.#moves.length, m.drawBlockedUntil);
+    if (!check.ok)
+      return fail(
+        'INVALID_STATE',
+        check.reason === 'EARLY'
+          ? '30수 이후에 제안할 수 있습니다.'
+          : '거절당한 뒤 잠시 지나야 다시 제안할 수 있습니다.',
+      );
+    // G-16: 제안자의 턴 타이머는 멈추고 남은 시간을 기억한다. 대신 응답 타이머를 건다
+    const remainingMs = Math.max(0, this.state.deadline - this.scheduler.now());
+    this.clearTurnTimers();
+    this.#offer = { by: m, remainingMs };
+    const deadline = this.scheduler.now() + gomoku.DRAW_ANSWER_SECONDS * this.timing.msPerTurnSecond;
+    this.state.drawOfferBy = m.id;
+    this.state.drawOfferDeadline = deadline;
+    this.io.broadcast('draw_offered', { playerId: m.id, deadline, serverNow: this.scheduler.now() });
+    this.setTurnTimer(deadline - this.scheduler.now(), () => this.#closeOffer('timeout'));
+    return OK;
+  }
+
+  /** G-16: 받은 쪽만 답한다. 수락이면 합의 무승부, 거절이면 제안자가 남은 시간으로 이어서 둔다 */
+  #answerDraw(m: Member, body: Record<string, unknown>): HandleResult {
+    if (this.phase !== 'PLAYING') return fail('INVALID_STATE', '대국 중이 아닙니다.');
+    const offer = this.#offer;
+    if (!offer) return fail('INVALID_STATE', '받은 무승부 제안이 없습니다.');
+    if (m.spectator || !m.color || m === offer.by)
+      return fail('NOT_YOUR_TURN', '제안을 받은 사람만 답할 수 있습니다.');
+    if (typeof body.accept !== 'boolean') return fail('INVALID_MESSAGE', '수락 또는 거절을 보내 주세요.');
+    if (body.accept) {
+      this.#offer = null;
+      this.#clearOfferState();
+      this.#finish('agreed', null, []);
+      return OK;
+    }
+    this.#closeOffer('declined');
+    return OK;
+  }
+
+  #clearOfferState(): void {
+    this.state.drawOfferBy = '';
+    this.state.drawOfferDeadline = 0;
+  }
+
+  /** 제안이 거절·무응답·이탈로 끝났다. 제안자는 남은 시간으로 이어서 둔다 (이탈로 봇이 이어받았다면 봇이 둔다) */
+  #closeOffer(reason: gomoku.DrawDeclineReason): void {
+    const offer = this.#offer;
+    if (!offer) return;
+    this.#offer = null;
+    this.#clearOfferState();
+    // 이탈은 제안자의 잘못이 아니므로 재제안 제한을 걸지 않는다
+    if (reason !== 'gone') {
+      const until = this.#moves.length + gomoku.DRAW_RETRY_STONES;
+      offer.by.drawBlockedUntil = until;
+      offer.by.view.drawBlockedUntil = until;
+    }
+    this.io.broadcast('draw_declined', { playerId: offer.by.id, reason });
+    if (this.phase === 'PLAYING') {
+      // 화면의 타이머가 멈췄다 이어지도록 마감 시각을 남은 시간만큼 뒤로 민다
+      this.state.deadline = this.scheduler.now() + offer.remainingMs;
+      this.#armTurnTimer(this.#turnId, offer.remainingMs);
+    }
+  }
+
   #place(m: Member, body: Record<string, unknown>): HandleResult {
+    if (this.#offer) return fail('INVALID_STATE', '무승부 제안의 응답을 기다리는 중입니다.');
     if (this.phase !== 'PLAYING') return fail('INVALID_STATE', '대국 중이 아닙니다.');
     if (m.spectator || m.color !== this.#turnColor || m.controller !== 'human')
       return fail('NOT_YOUR_TURN', '내 차례가 아닙니다.');
@@ -294,6 +385,8 @@ export class GomokuMatch extends LobbyMatch<Options, GomokuPlayerState, Member, 
 
   #finish(result: gomoku.GomokuResult, winnerColor: Color | null, line: readonly gomoku.Point[]): void {
     this.clearTurnTimers();
+    this.#offer = null;
+    this.#clearOfferState();
     const winner = winnerColor ? this.#byColor(winnerColor) : undefined;
     this.state.result = result;
     this.state.winnerId = winner?.id ?? '';

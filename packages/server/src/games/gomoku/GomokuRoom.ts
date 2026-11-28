@@ -11,7 +11,7 @@ import { toGomokuSummary } from './record.js';
  */
 export class GomokuRoom extends GameRoom<GomokuMatch, gomoku.GomokuRoomOptions> {
   override maxClients = gomoku.GOMOKU_PLAYERS + GOMOKU_SPECTATOR_LIMIT;
-  protected readonly gameMessages = ['place'] as const;
+  protected readonly gameMessages = ['place', 'offer_draw', 'answer_draw'] as const;
 
   protected parseOptions(rawOptions: unknown): gomoku.GomokuRoomOptions | null {
     const parsed = gomoku.parseGomokuOptions(rawOptions);

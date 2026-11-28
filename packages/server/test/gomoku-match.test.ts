@@ -289,3 +289,117 @@ describe('오목 방: 대기실', () => {
     expect(match.join('guest-guest-01', '손님')).toEqual({ ok: false, code: 'KICKED' });
   });
 });
+
+describe('오목 방: 무승부 제안 (G-14~G-16, G-26)', () => {
+  /** 사람 둘이 번갈아 60돌을 둔다 (5목이 안 되는 무늬: 가로 두 줄씩 번갈아) */
+  function fill(g: ReturnType<typeof started>, stones: number): void {
+    const cells: [number, number][] = [];
+    for (let y = 0; y < 15; y += 1) for (let x = 0; x < 15; x += 1) cells.push([x, y]);
+    // 흑은 (x 짝수), 백은 (x 홀수)로 줄을 나눠 두면 한 줄에 같은 색이 연속되지 않는다
+    const blackCells = cells.filter(([x, y]) => (x + Math.floor(y / 1)) % 2 === 0 && y % 4 < 2);
+    const whiteCells = cells.filter(([x, y]) => (x + Math.floor(y / 1)) % 2 === 1 && y % 4 < 2);
+    for (let i = 0; g.match.state.moveCount < stones; i += 1) {
+      const black = i % 2 === 0;
+      const [x, y] = (black ? blackCells : whiteCells)[Math.floor(i / 2)]!;
+      const id = black ? g.black : g.white;
+      expect(g.match.handle(id, 'place', { x, y, turnId: g.match.state.turnId }), `${x},${y}`).toEqual({
+        ok: true,
+      });
+      if (g.match.phase !== 'PLAYING') throw new Error('game ended while filling');
+    }
+  }
+  const offer = (g: ReturnType<typeof started>, id: string) =>
+    g.match.handle(id, 'offer_draw', { turnId: g.match.state.turnId });
+  const answer = (g: ReturnType<typeof started>, id: string, accept: boolean) =>
+    g.match.handle(id, 'answer_draw', { accept });
+
+  it('GT-15: 60돌 전에는 INVALID_STATE, 상대 차례에는 NOT_YOUR_TURN, 60돌 이후 내 차례에는 접수', () => {
+    const g = started({ blackPolicy: 'host', turnSeconds: 60 });
+    expect(offer(g, g.black)).toMatchObject({ code: 'INVALID_STATE' });
+    fill(g, 60);
+    expect(g.match.state.currentTurn).toBe(g.black);
+    expect(offer(g, g.white)).toMatchObject({ code: 'NOT_YOUR_TURN' });
+    expect(offer(g, g.black)).toEqual({ ok: true });
+    expect(g.io.last('draw_offered')).toMatchObject({ playerId: g.black });
+    expect(g.match.state.drawOfferBy).toBe(g.black);
+    expect(offer(g, g.black)).toMatchObject({ code: 'INVALID_STATE' });
+    // 제안 중에는 둘 수 없다
+    expect(place(g.match, g.black, 'H8')).toMatchObject({ code: 'INVALID_STATE' });
+  });
+
+  it('GT-16: 상대가 수락하면 합의 무승부로 끝나고 기록은 둘 다 1위', () => {
+    const g = started({ blackPolicy: 'host', turnSeconds: 60 });
+    fill(g, 60);
+    offer(g, g.black);
+    expect(answer(g, g.black, true)).toMatchObject({ code: 'NOT_YOUR_TURN' });
+    expect(answer(g, g.white, true)).toEqual({ ok: true });
+    expect(g.match.phase).toBe('GAME_OVER');
+    expect(g.match.state).toMatchObject({ result: 'agreed', winnerId: '', drawOfferBy: '' });
+    expect(g.io.last('game_over')).toMatchObject({ result: 'agreed', winnerId: null });
+    expect(g.io.records[0]?.result).toBe('agreed');
+  });
+
+  it('GT-17: 거절하면 제안자의 남은 시간으로 이어서 두고, 내 수 10번 뒤에 다시 제안할 수 있다', () => {
+    const g = started({ blackPolicy: 'host', turnSeconds: 60 });
+    fill(g, 60);
+    const left = g.match.state.deadline - g.scheduler.now();
+    g.scheduler.advance(5_000);
+    offer(g, g.black);
+    // 제안 중에는 시간이 흘러도 제안자의 시간패가 아니다
+    g.scheduler.advance(10_000);
+    expect(g.match.phase).toBe('PLAYING');
+    expect(answer(g, g.white, false)).toEqual({ ok: true });
+    expect(g.io.last('draw_declined')).toMatchObject({ playerId: g.black, reason: 'declined' });
+    expect(g.match.state.drawOfferBy).toBe('');
+    expect(g.match.state.players.get(g.black)?.drawBlockedUntil).toBe(80);
+    expect(offer(g, g.black)).toMatchObject({ code: 'INVALID_STATE' });
+    // 남은 시간(60초 중 5초 쓴 55초)으로 이어진다: 55초 뒤에 시간패
+    g.scheduler.advance(left - 5_000 - 1);
+    expect(g.match.phase).toBe('PLAYING');
+    g.scheduler.advance(2);
+    expect(g.match.state.result).toBe('timeout');
+  });
+
+  it('GT-17: 15초 무응답은 거절로 본다', () => {
+    const g = started({ blackPolicy: 'host', turnSeconds: 60 });
+    fill(g, 60);
+    offer(g, g.black);
+    g.scheduler.advance(15_000 + 1);
+    expect(g.io.last('draw_declined')).toMatchObject({ playerId: g.black, reason: 'timeout' });
+    expect(g.match.state.drawOfferBy).toBe('');
+    expect(g.match.phase).toBe('PLAYING');
+  });
+
+  it('GT-17: 상대가 나가면 제안은 끝나고(재제안 제한 없음), 봇이 이어받는다', () => {
+    const g = started({ blackPolicy: 'host', turnSeconds: 60 });
+    fill(g, 60);
+    offer(g, g.black);
+    g.match.leave(g.white);
+    expect(g.io.last('draw_declined')).toMatchObject({ playerId: g.black, reason: 'gone' });
+    expect(g.match.state.players.get(g.black)?.drawBlockedUntil).toBe(0);
+    // 이제 상대는 봇이라 다시 제안할 수 없다 (G-26)
+    expect(offer(g, g.black)).toMatchObject({ code: 'INVALID_STATE' });
+  });
+
+  it('GT-18 (G-26): 상대가 봇이면 제안할 수 없다', () => {
+    const ctx = setup({ fillWithBots: true, blackPolicy: 'host', turnSeconds: 60 });
+    const host = joinOk(ctx.match, 'guest-host-01', '방장');
+    ctx.match.handle(host, 'start_game', {});
+    ctx.scheduler.advance(FAST_TIMING.startCountdownMs);
+    expect(offer({ ...ctx, host, guest: '', black: host, white: '' } as never, host)).toMatchObject({
+      code: 'INVALID_STATE',
+    });
+  });
+
+  it('리매치하면 제안 상태와 제한을 지운다', () => {
+    const g = started({ blackPolicy: 'host', turnSeconds: 60 });
+    fill(g, 60);
+    offer(g, g.black);
+    answer(g, g.white, false);
+    g.scheduler.advance(60_001);
+    expect(g.match.phase).toBe('GAME_OVER');
+    expect(g.match.handle(g.host, 'rematch', {})).toEqual({ ok: true });
+    expect(g.match.state.players.get(g.black)?.drawBlockedUntil).toBe(0);
+    expect(g.match.state.drawOfferBy).toBe('');
+  });
+});

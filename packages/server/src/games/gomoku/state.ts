@@ -17,6 +17,8 @@ export const GomokuPlayerState = schema(
     color: t.string().default(''),
     /** G-22: 사람이 나가서 봇이 이어서 두는 중 */
     replaced: t.boolean().default(false),
+    /** G-15: 거절당한 뒤 전체 돌이 이 개수가 될 때까지 제안할 수 없다. 0이면 제한 없음 */
+    drawBlockedUntil: t.uint16().default(0),
   },
   'GomokuPlayerState',
 );
@@ -54,7 +56,11 @@ export const GomokuState = schema(
     deadline: t.float64().default(0),
     /** STARTING 카운트다운이 끝나는 시각 */
     phaseEndsAt: t.float64().default(0),
-    /** 결과: '' | five | timeout | draw */
+    /** G-16: 무승부를 제안한 사람. 없으면 '' */
+    drawOfferBy: t.string().default(''),
+    /** 제안 응답 마감 시각 (서버 시간) */
+    drawOfferDeadline: t.float64().default(0),
+    /** 결과: '' | five | timeout | draw | agreed */
     result: t.string().default(''),
     winnerId: t.string().default(''),
     /** 승리한 줄의 인덱스들 */

@@ -118,3 +118,9 @@ test('PC: 결과 카드는 오른쪽 칸에 나와 판을 가리지 않는다', 
   const card = (await result.boundingBox())!;
   expect(card.x).toBeGreaterThanOrEqual(board.x + board.width);
 });
+
+test('GT-18 (G-26, G-38): 상대가 봇이면 무승부 제안 버튼이 꺼지고 이유를 보여 준다', async ({ page }) => {
+  await startVsBot(page);
+  await expect(page.getByTestId('draw-offer-btn')).toBeDisabled();
+  await expect(page.getByTestId('draw-why')).toContainText('봇은 무승부를 받지 않아요');
+});

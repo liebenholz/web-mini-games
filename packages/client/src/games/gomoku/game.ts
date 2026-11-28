@@ -101,9 +101,18 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
 
   const result = h('div', { class: 'gomoku-result', hidden: true, 'data-testid': 'result' });
   // 결과 카드는 폰에서는 화면 아래에 떠 있고, PC에서는 오른쪽 칸에 들어가 판을 가리지 않는다
-  const side = h('aside', { class: 'gomoku-side' }, players, help, result);
+  const drawBox = h('div', { class: 'gm-draw-box' });
+  const side = h('aside', { class: 'gomoku-side' }, players, drawBox, help, result);
+  // G-38: 받은 쪽에 뜨는 수락 / 거절 카드 (화면 아래, 터치 확인 상자와 같은 자리)
+  const offerCard = h('div', {
+    class: 'gm-offer',
+    hidden: true,
+    role: 'alertdialog',
+    'aria-label': '무승부 제안',
+    'data-testid': 'draw-offer',
+  });
   const main = h('div', { class: 'gomoku-main' }, h('div', { class: 'board-wrap' }, board), side);
-  const shell = h('div', { class: 'gomoku' }, statusbar, notice, main, confirmBar);
+  const shell = h('div', { class: 'gomoku' }, statusbar, notice, main, confirmBar, offerCard);
   root.replaceChildren(shell);
 
   function me(): GomokuPlayerView | undefined {
@@ -124,7 +133,7 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
   /** 내 차례이고 둘 수 있는 빈칸인가 (G-34) */
   function canPlace(p: Point): boolean {
     const m = me();
-    if (!myTurn() || !m?.color) return false;
+    if (!myTurn() || !m?.color || snap.view.drawOfferBy) return false;
     return gomoku.checkPlace(snap.view.board, p, m.color, rules()).ok;
   }
 
@@ -341,7 +350,14 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
     const v = snap.view;
     let text = '';
     let kind = '';
-    if (n && v.phase === 'PLAYING' && n.playerId !== snap.me) {
+    const dn = snap.drawNote;
+    if (dn && v.phase === 'PLAYING' && Date.now() - dn.at < 4000) {
+      if (dn.by === snap.me && dn.reason === 'declined') text = '상대가 무승부를 거절했어요.';
+      else if (dn.reason === 'timeout') text = '응답이 없어 무승부 제안이 끝났어요.';
+      else if (dn.reason === 'gone') text = '상대가 나가서 무승부 제안이 취소됐어요.';
+      if (text) kind = 'ok';
+    }
+    if (!text && n && v.phase === 'PLAYING' && n.playerId !== snap.me) {
       const p = v.players.find((x) => x.id === n.playerId);
       const age = Date.now() - n.at;
       if (n.reason === 'left' && age < 8000) {
@@ -368,6 +384,81 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
     if (pending) confirmLabel.textContent = `${gomoku.coordLabel(pending)}에 둘까요?`;
   }
 
+  /** G-38: 무승부 제안 버튼, 기다리는 중 표시, 받은 쪽의 수락 / 거절 카드 */
+  function drawDraw(): void {
+    const v = snap.view;
+    const m = me();
+    const playing = v.phase === 'PLAYING' && Boolean(m?.color);
+    offerCard.hidden = true;
+    if (!playing || !m) {
+      drawBox.replaceChildren();
+      return;
+    }
+    // 내가 받은 제안
+    if (v.drawOfferBy && v.drawOfferBy !== snap.me) {
+      const from = v.players.find((p) => p.id === v.drawOfferBy)?.nickname ?? '';
+      const accept = h(
+        'button',
+        { class: 'btn btn-primary', type: 'button', 'data-testid': 'draw-accept' },
+        '수락',
+      );
+      accept.addEventListener('click', () => session.send('answer_draw', { accept: true }));
+      const decline = h('button', { class: 'btn', type: 'button', 'data-testid': 'draw-decline' }, '거절');
+      decline.addEventListener('click', () => session.send('answer_draw', { accept: false }));
+      offerCard.hidden = false;
+      offerCard.replaceChildren(
+        h('strong', {}, `${from} 님이 무승부를 제안했어요`),
+        h(
+          'span',
+          { class: 'hint' },
+          `${gomoku.DRAW_ANSWER_SECONDS}초 안에 답하지 않으면 거절돼요 · `,
+          h('span', { 'data-draw-seconds': '' }),
+        ),
+        h('div', { class: 't' }, h('i')),
+        h('div', { class: 'acts' }, decline, accept),
+      );
+      drawBox.replaceChildren();
+      return;
+    }
+    // 내가 한 제안
+    if (v.drawOfferBy === snap.me) {
+      drawBox.replaceChildren(
+        h(
+          'div',
+          { class: 'gm-pending', role: 'status', 'data-testid': 'draw-pending' },
+          h('span', {}, '무승부를 제안했어요 · 기다리는 중'),
+          h('span', { class: 'sec', 'data-draw-seconds': '' }),
+        ),
+      );
+      return;
+    }
+    const opp = v.players.find((p) => p.color && p.color !== m.color);
+    const check = gomoku.drawOfferCheck(v.moveCount, m.drawBlockedUntil);
+    const oppBot = !opp || opp.isBot || opp.replaced;
+    let why = '무승부를 제안할 수 있어요';
+    if (oppBot) why = '봇은 무승부를 받지 않아요';
+    else if (!check.ok)
+      why =
+        check.reason === 'EARLY'
+          ? `30수 이후 제안할 수 있어요 · 내 수 ${gomoku.myMovesLeft(check.stonesLeft)}번 뒤`
+          : `거절당했어요 · 내 수 ${gomoku.myMovesLeft(check.stonesLeft)}번 뒤 다시`;
+    else if (!myTurn()) why = '내 차례에 제안할 수 있어요';
+    const btn = h(
+      'button',
+      {
+        class: 'btn',
+        type: 'button',
+        disabled: oppBot || !check.ok || !myTurn(),
+        'data-testid': 'draw-offer-btn',
+      },
+      '무승부 제안',
+    );
+    btn.addEventListener('click', () => session.send('offer_draw', { turnId: v.turnId }));
+    drawBox.replaceChildren(
+      h('div', { class: 'gm-draw' }, btn, h('span', { class: 'why', 'data-testid': 'draw-why' }, why)),
+    );
+  }
+
   function drawResult(): void {
     const v = snap.view;
     if (v.phase === 'STARTING') {
@@ -391,7 +482,7 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
     const winner = v.players.find((p) => p.id === v.winnerId);
     const mine = me();
     const title =
-      v.result === 'draw'
+      v.result === 'draw' || v.result === 'agreed'
         ? '무승부'
         : !mine?.color
           ? `${winner?.color === 'black' ? '흑' : '백'} 승리`
@@ -403,7 +494,9 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
         ? `${winner?.nickname ?? ''} 님이 다섯을 이었어요`
         : v.result === 'timeout'
           ? '시간패로 끝났어요'
-          : '판이 다 찼어요';
+          : v.result === 'agreed'
+            ? '서로 합의해 무승부로 끝났어요'
+            : '판이 다 찼어요';
     const again = h('button', { class: 'btn btn-primary', type: 'button' }, '다시 하기');
     again.addEventListener('click', () => session.send('rematch', {}));
     const leave = h('button', { class: 'btn', type: 'button' }, '나가기');
@@ -422,6 +515,7 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
     drawPlayers();
     drawNotice();
     drawConfirm();
+    drawDraw();
     drawResult();
     conn.replaceChildren(snap.connection === 'online' ? '' : svg(icons.offline));
     moves.textContent = `${snap.view.moveCount}수`;
@@ -433,7 +527,14 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
     const v = snap.view;
     const bar = players.querySelector<HTMLElement>('[data-timer] i');
     const secs = players.querySelector<HTMLElement>('[data-seconds]');
-    if (bar && v.phase === 'PLAYING' && v.deadline > 0) {
+    const offerBar = offerCard.querySelector<HTMLElement>('.t i');
+    const offerLeft = v.drawOfferDeadline > 0 ? Math.max(0, v.drawOfferDeadline - session.serverNow()) : 0;
+    if (offerBar)
+      offerBar.style.transform = `scaleX(${Math.min(1, offerLeft / (gomoku.DRAW_ANSWER_SECONDS * 1000))})`;
+    for (const el of document.querySelectorAll<HTMLElement>('[data-draw-seconds]'))
+      el.textContent = `${Math.ceil(offerLeft / 1000)}초`;
+    // G-16: 제안이 대기 중인 동안 제안자의 턴 타이머는 멈춘다
+    if (bar && v.phase === 'PLAYING' && v.deadline > 0 && !v.drawOfferBy) {
       const left = Math.max(0, v.deadline - session.serverNow());
       const ratio = Math.min(1, left / (v.options.turnSeconds * 1000));
       bar.style.transform = `scaleX(${ratio})`;
@@ -450,7 +551,11 @@ export function mountGomokuGame(root: HTMLElement, session: GomokuSession, onExi
       lastTurnId = s.view.turnId;
       pending = null;
     }
-    if (pending && s.view.board[gomoku.indexOf(pending.x, pending.y)] !== gomoku.EMPTY) pending = null;
+    if (
+      pending &&
+      (s.view.board[gomoku.indexOf(pending.x, pending.y)] !== gomoku.EMPTY || s.view.drawOfferBy)
+    )
+      pending = null;
     paint();
   });
   const noticeTimer = window.setInterval(drawNotice, 1000);
