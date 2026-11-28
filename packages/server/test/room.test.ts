@@ -481,6 +481,47 @@ describe('UpdownRoom 통합 (updown-bomb.md)', () => {
   });
 });
 
+describe('BalloonRoom 통합 (balloon.md)', () => {
+  it('두 사람이 들어와 시작하고, 펌프가 반영되며, 끝나기 전엔 터지는 횟수가 오가지 않는다', async () => {
+    const room = await colyseus.sdk.create('balloon', {
+      guestId: newGuest(),
+      nickname: '방장',
+      options: { fillWithBots: false, turnSeconds: 15 },
+    });
+    const host = spy(room);
+    await waitFor(() => host.playerId !== '');
+    const guestSpy = await joinRoom(host.room.roomId, newGuest(), '손님');
+    guestSpy.room.send('set_ready', { ready: true });
+    await sleep(50);
+    host.room.send('start_game', {});
+    const state = host.room.state as {
+      phase: string;
+      turnId: string;
+      currentTurn: string;
+      total: number;
+      maxPops: number;
+      threshold: number;
+    };
+    await waitFor(() => state.phase === 'PLAYING');
+    expect([state.total, state.maxPops, state.threshold]).toEqual([0, 20, 0]);
+    const mover = state.currentTurn === host.playerId ? host : guestSpy;
+    const turnId = state.turnId;
+    mover.room.send('end_turn', { turnId });
+    await waitFor(() => mover.messages.some((m) => m.type === 'error' && m.payload.code === 'INVALID_MOVE'));
+    mover.room.send('pump', { turnId });
+    await waitFor(() => has(guestSpy, 'pumped') && has(host, 'pumped'));
+    expect(guestSpy.messages.find((m) => m.type === 'pumped')?.payload).toMatchObject({
+      playerId: mover.playerId,
+      total: 1,
+      turnPumps: 1,
+    });
+    await waitFor(() => state.total === 1);
+    for (const spyOf of [host, guestSpy])
+      for (const m of spyOf.messages) expect(Object.keys(m.payload ?? {})).not.toContain('threshold');
+    expect(state.threshold).toBe(0);
+  });
+});
+
 describe('OneCardRoom 통합 (Phase 2 M3)', () => {
   it('두 사람 + 봇 2명으로 시작하면 각자 자기 패 7장만 받고, 공유 상태에는 패가 없다 (C-40)', async () => {
     const room = await colyseus.sdk.create('one_card', {

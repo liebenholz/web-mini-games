@@ -86,4 +86,14 @@ export const CATALOG: readonly GameCatalogEntry[] = [
     category: 'party',
     status: 'available',
   },
+  {
+    id: 'balloon',
+    name: '풍선 터뜨리기',
+    tagline: '바람을 불다 풍선이 터지면 당첨',
+    lead: '차례대로 1~3번씩 풍선에 바람을 불어요. 언제 터질지는 아무도 몰라요. 터뜨린 사람이 당첨!',
+    players: '2~10명',
+    minutes: '1~3분',
+    category: 'party',
+    status: 'available',
+  },
 ];

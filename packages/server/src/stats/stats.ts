@@ -115,6 +115,11 @@ export function finalizeMetrics(raw: RawGameMetrics): GameMetrics {
       extra.autoMoveRate =
         n >= MIN_GAMES_FOR_RATE && raw.movesSum > 0 ? round(raw.autoMoves / raw.movesSum, 3) : null;
       break;
+    case 'balloon':
+      extra.avgMoves = avg(raw.movesSum, n);
+      extra.autoMoveRate =
+        n >= MIN_GAMES_FOR_RATE && raw.movesSum > 0 ? round(raw.autoMoves / raw.movesSum, 3) : null;
+      break;
     case 'updown_bomb':
       extra.avgMoves = avg(raw.movesSum, n);
       extra.autoMoveRate =

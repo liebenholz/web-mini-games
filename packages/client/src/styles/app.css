@@ -2935,6 +2935,165 @@ button.game-main:focus-visible,
   }
 }
 
+/* ───── 풍선 터뜨리기 (balloon.md 8장, 시안 2026-11-28). 틀은 업다운(ud-*)을 같이 쓴다 ───── */
+.bl-stage {
+  order: 2;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+}
+
+.bl-stage .lab {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+}
+
+.bl-air {
+  height: 200px;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 6px;
+}
+
+.bl-air.pop {
+  height: 150px;
+  place-items: center;
+}
+
+.bl-air svg {
+  overflow: visible;
+}
+
+/* 펌프마다 조금 커지며 흔들린다 (200ms) */
+.bl-air .bl-svg {
+  transform-origin: 50% 100%;
+  animation: bl-wobble 0.2s var(--ease-out);
+}
+
+.bl-count {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.bl-count small {
+  font-size: 0.9375rem;
+  color: var(--ink-3);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.bl-range {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  margin: 2px 0 0;
+}
+
+.bl-range b {
+  color: var(--danger);
+}
+
+.bl-meter {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.bl-meter .safe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--accent-soft);
+  border-right: 2px solid var(--accent);
+}
+
+.bl-meter .zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--danger-soft),
+    var(--danger-soft) 4px,
+    var(--bg) 4px,
+    var(--bg) 8px
+  );
+}
+
+.bl-dots {
+  order: 2;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.bl-dots i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  background: var(--bg);
+}
+
+.bl-dots i.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.bl-controls {
+  order: 3;
+}
+
+.bl-actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
+}
+
+.bl-actions .btn {
+  min-height: 64px;
+}
+
+.bl-pump {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+/* 버튼과 같은 높이로 자리를 지켜 차례가 바뀌어도 출렁이지 않게 */
+.ud-wait.bl-wait {
+  min-height: 76px;
+}
+
+@keyframes bl-wobble {
+  0% {
+    transform: scale(0.94) rotate(-2deg);
+  }
+  60% {
+    transform: scale(1.03) rotate(1.5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-air .bl-svg {
+    animation: none;
+  }
+}
+
 /* ───── 원카드 (one-card.md 11장, 시안) ───── */
 .fixed-rules {
   display: flex;

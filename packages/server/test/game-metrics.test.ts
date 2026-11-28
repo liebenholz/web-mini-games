@@ -59,6 +59,10 @@ describe('게임별 진행 지표 (docs/specs/stats.md ST-08~ST-12)', () => {
       finalizeMetrics({ ...emptyRaw('updown_bomb'), games: 10, movesSum: 70, autoMoves: 7, forcedGames: 2 })
         .extra,
     ).toEqual({ avgMoves: 7, autoMoveRate: 0.1, forcedRate: 0.2 });
+    expect(finalizeMetrics({ ...emptyRaw('balloon'), games: 5, movesSum: 60, autoMoves: 3 }).extra).toEqual({
+      avgMoves: 12,
+      autoMoveRate: 0.05,
+    });
   });
 
   it('ST-08~ST-10: 메모리 저장소로 끝난 판, 이탈, 봇, 모두 나간 판을 센다', async () => {
