@@ -2,11 +2,14 @@
  * 업다운 숫자폭탄 방 옵션과 메시지 타입 (docs/specs/updown-bomb.md 4장, 6장).
  * 공통 대기실 메시지(set_ready … leave_room)는 다른 게임과 같은 이름과 형태를 쓴다.
  */
-import { MAX_PLAYERS, MIN_PLAYERS } from '../../room.js';
+import { MIN_PLAYERS } from '../../room.js';
 import type { CallResult } from './game.js';
 
 /** 서버 방 종류 (ADR 0002). 주소 이름은 updown-bomb */
 export const UPDOWN_ROOM_TYPE = 'updown_bomb';
+
+/** 이 게임만 10명까지 (다른 게임의 상한 MAX_PLAYERS=6은 그대로, 2026-11-28) */
+export const UPDOWN_MAX_PLAYERS = 10;
 
 /** 범위 1~N (UD-01) */
 export const UPDOWN_RANGES = [50, 100, 200] as const;
@@ -70,7 +73,7 @@ export function parseUpdownOptions(
   }
   if ('maxPlayers' in raw) {
     const v = raw.maxPlayers;
-    if (!Number.isInteger(v) || (v as number) < MIN_PLAYERS || (v as number) > MAX_PLAYERS)
+    if (!Number.isInteger(v) || (v as number) < MIN_PLAYERS || (v as number) > UPDOWN_MAX_PLAYERS)
       return { ok: false, code: 'INVALID_OPTIONS', field: 'maxPlayers' };
     next.maxPlayers = v as number;
   }

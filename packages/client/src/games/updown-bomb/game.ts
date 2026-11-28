@@ -115,7 +115,7 @@ export function mountUpdownGame(root: HTMLElement, session: UpdownSession, onExi
     const v = snap.view;
     return h(
       'div',
-      { class: 'ud-players', 'aria-label': '참가자' },
+      { class: `ud-players${seated().length > 6 ? ' ten' : ''}`, 'aria-label': '참가자' },
       ...seated().map((p) => {
         const active = v.phase === 'PLAYING' && v.currentTurn === p.id;
         const tag = p.replaced || p.autopilot ? '봇이 대신' : p.isBot ? '봇' : !p.connected ? '끊김' : '';
@@ -131,7 +131,13 @@ export function mountUpdownGame(root: HTMLElement, session: UpdownSession, onExi
             p.id === snap.me ? '나' : ([...p.nickname][0] ?? ''),
           ),
           h('span', { class: 'nm' }, p.nickname),
-          tag ? h('span', { class: `ud-tag${tag === '끊김' ? ' off' : ''}` }, tag) : null,
+          tag
+            ? h(
+                'span',
+                { class: `ud-tag${tag === '끊김' ? ' off' : ''}${tag === '봇' ? ' plain' : ''}` },
+                tag,
+              )
+            : null,
           active ? h('span', { class: 'ud-t', 'data-timer': '' }, h('i')) : null,
         );
       }),

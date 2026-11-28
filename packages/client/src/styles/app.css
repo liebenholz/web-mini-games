@@ -606,6 +606,15 @@ p {
   max-width: 100%;
 }
 
+.segmented.wrap {
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.segmented.wrap button {
+  flex: 1 0 18%;
+}
+
 .segmented button {
   min-width: 44px;
   min-height: 44px;
@@ -2381,6 +2390,44 @@ button.game-main:focus-visible,
 
 .ud-log {
   order: 4;
+}
+
+/* 7명 이상(최대 10): 5칸 × 2줄의 작은 칩. 360px에서도 범위와 키패드가 첫 화면에 들어오게 (시안 2026-11-28) */
+.ud-players.ten {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.ud-players.ten .ud-p {
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 2px 7px;
+  text-align: center;
+}
+
+.ud-players.ten .ud-p.active {
+  padding: 3px 1px 5px;
+}
+
+.ud-players.ten .ud-p .nm {
+  font-size: 0.6875rem;
+  max-width: 100%;
+}
+
+.ud-players.ten .ud-p .avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 0.6875rem;
+}
+
+.ud-players.ten .ud-tag.plain {
+  display: none;
+}
+
+.ud-players.ten .ud-tag {
+  margin: 0;
+  font-size: 0.625rem;
+  padding: 0 4px;
 }
 
 .ud-p {

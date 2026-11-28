@@ -142,7 +142,8 @@ describe('업다운 옵션 (4장)', () => {
   it('범위 밖 값은 거부하고 모르는 키는 무시한다', () => {
     expect(parseUpdownOptions({ rangeMax: 150 })).toMatchObject({ ok: false, field: 'rangeMax' });
     expect(parseUpdownOptions({ turnSeconds: 60 })).toMatchObject({ ok: false, field: 'turnSeconds' });
-    expect(parseUpdownOptions({ maxPlayers: 7 })).toMatchObject({ ok: false, field: 'maxPlayers' });
+    expect(parseUpdownOptions({ maxPlayers: 11 })).toMatchObject({ ok: false, field: 'maxPlayers' });
+    expect(parseUpdownOptions({ maxPlayers: 10 })).toMatchObject({ ok: true });
     expect(parseUpdownOptions({ maxPlayers: 1 })).toMatchObject({ ok: false, field: 'maxPlayers' });
     expect(parseUpdownOptions({ isPrivate: 'no' })).toMatchObject({ ok: false, field: 'isPrivate' });
     expect(parseUpdownOptions({ rangeMax: 50, turnSeconds: 10, maxPlayers: 3, foo: 1 })).toEqual({

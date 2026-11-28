@@ -67,7 +67,12 @@ export function segmented<T extends string | number>(
   onPick: (v: T) => void,
   text: (v: T) => string = String,
 ) {
-  const group = h('div', { class: 'segmented', role: 'group', 'aria-label': label });
+  // 선택지가 6개를 넘으면 360px에서 넘치므로 줄바꿈한다 (업다운·풍선 2~10명)
+  const group = h('div', {
+    class: `segmented${values.length > 6 ? ' wrap' : ''}`,
+    role: 'group',
+    'aria-label': label,
+  });
   for (const v of values) {
     const b = h(
       'button',
